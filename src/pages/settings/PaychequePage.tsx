@@ -9,39 +9,13 @@
  * Detection keywords are case-insensitive substring matches used during CSV import.
  */
 
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link }      from 'react-router-dom'
 import { ChevronLeft, HelpCircle } from 'lucide-react'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 import { useSave }          from '../../contexts/SaveContext'
 import { useToast }         from '../../contexts/ToastContext'
 import type { Settings }    from '../../types/database'
-
-// ── Auto-save field ────────────────────────────────────────────────────────────
-
-interface FieldProps {
-  label:       string
-  hint?:       string
-  value:       string
-  type?:       'text' | 'number'
-  placeholder?: string
-  onSave:      (val: string) => Promise<void>
-}
-
-function AutoSaveField({ label, hint, value, type = 'text', placeholder, onSave }: FieldProps) {
-  // We keep a local draft so keystrokes don't trigger saves
-  const [draft, setDraft] = [value, (v: string) => { /* overridden below */ void v }]
-  // React state managed inline via controlled pattern
-  return (
-    <FieldImpl
-      label={label} hint={hint} serverValue={value}
-      type={type} placeholder={placeholder} onSave={onSave}
-    />
-  )
-  void draft; void setDraft
-}
-
-import { useState, useRef } from 'react'
 
 interface FieldImplProps {
   label:        string

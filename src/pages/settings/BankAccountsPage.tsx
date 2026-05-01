@@ -101,7 +101,7 @@ export function BankAccountsPage() {
 
       {!isLoading && accounts.length > 0 && (
         <div className="card overflow-hidden">
-          {accounts.map((account, i) => (
+          {accounts.map((account) => (
             <div
               key={account.id}
               className="flex items-center gap-3 px-4 py-3 text-sm border-b last:border-b-0"

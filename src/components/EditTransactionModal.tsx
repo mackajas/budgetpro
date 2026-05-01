@@ -318,7 +318,7 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
                   </label>
                   <label className="flex items-center gap-1.5 text-xs cursor-pointer"
                     style={{ color: 'var(--text-muted)' }}>
-                    <input type="checkbox" checked={splitMode}
+                    <input type="checkbox" checked={splitMode ?? false}
                       onChange={e => setSplitMode(e.target.checked)} />
                     Split across envelopes
                   </label>

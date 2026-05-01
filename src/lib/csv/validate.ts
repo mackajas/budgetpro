@@ -45,6 +45,6 @@ export function validateRow(row: NormalisedRow): ValidationResult {
   if (result.success) {
     return { success: true, data: result.data }
   }
-  const message = result.error.errors.map(e => e.message).join('; ')
+  const message = result.error.issues.map((e: { message: string }) => e.message).join('; ')
   return { success: false, error: message }
 }

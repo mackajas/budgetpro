@@ -6,7 +6,7 @@
  * and clears the review flag so the transaction re-enters normal flow.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft, RotateCcw }        from 'lucide-react'
 import { Link }                          from 'react-router-dom'
 import { supabase }                      from '../../lib/supabase'

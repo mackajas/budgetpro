@@ -193,7 +193,7 @@ export function ImportModal({ onClose }: Props) {
       // Run pipeline (parses file, classifies rows)
       const result = await runImportPipeline({
         file,
-        settings:    settings ?? ({} as typeof settings),
+        settings:    settings!,
         envelopes,
         allocations,
         rules,

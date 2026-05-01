@@ -13,7 +13,7 @@ interface SettingsActions {
   update: (patch: Partial<Omit<Settings, 'id'>>) => Promise<void>
 }
 
-export const useSettingsStore = create<SettingsState & SettingsActions>((set, get) => ({
+export const useSettingsStore = create<SettingsState & SettingsActions>((set) => ({
   settings:  null,
   isLoading: false,
   error:     null,
