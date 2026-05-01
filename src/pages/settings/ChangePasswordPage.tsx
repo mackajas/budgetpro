@@ -50,7 +50,7 @@ function PasswordInput({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          autoComplete="off"
+          autoComplete={label.toLowerCase().includes('current') ? 'current-password' : 'new-password'}
         />
         <button
           type="button"

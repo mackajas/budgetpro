@@ -78,11 +78,14 @@ interface RowProps {
   onRename:     (id: string, name: string) => Promise<void>
   onAddChild:   (parentId: string) => Promise<void>
   onDelete:     (envelope: Envelope) => void
+  isDeleting:   boolean
   /** Focus this row's input on mount */
   autoFocus:    boolean
+  /** Called after auto-focus fires so parent can clear the newly-added flag */
+  onFocused:    () => void
 }
 
-function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, autoFocus }: RowProps) {
+function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, isDeleting, autoFocus, onFocused }: RowProps) {
   const [value, setValue]   = useState(envelope.name)
   const [saving, setSaving] = useState(false)
   const inputRef            = useRef<HTMLInputElement>(null)
@@ -91,8 +94,11 @@ function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, autoFo
   useEffect(() => { setValue(envelope.name) }, [envelope.name])
 
   useEffect(() => {
-    if (autoFocus) inputRef.current?.focus()
-  }, [autoFocus])
+    if (autoFocus) {
+      inputRef.current?.focus()
+      onFocused()
+    }
+  }, [autoFocus, onFocused])
 
   async function handleBlur() {
     const trimmed = value.trim()
@@ -108,7 +114,7 @@ function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, autoFo
 
   return (
     <div
-      className={`flex items-center gap-2 border-b px-4 py-2.5 ${isChild ? 'pl-8' : ''}`}
+      className={`flex items-center gap-2 border-b px-4 py-2.5 ${isChild ? 'pl-8 relative' : ''}`}
       style={{ borderColor: 'var(--border)' }}
     >
       {/* Pink child rule */}
@@ -139,13 +145,14 @@ function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, autoFo
 
       <button
         className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-        style={{ color: 'var(--text-subtle)' }}
+        style={{ color: isDeleting ? 'var(--text-subtle)' : 'var(--text-subtle)' }}
         title="Delete envelope"
+        disabled={isDeleting}
         onClick={() => onDelete(envelope)}
-        onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
+        onMouseEnter={e => { if (!isDeleting) e.currentTarget.style.color = 'var(--danger)' }}
         onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-subtle)')}
       >
-        <Trash2 className="h-4 w-4" />
+        {isDeleting ? <span className="spinner h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
       </button>
     </div>
   )
@@ -161,6 +168,7 @@ export function EnvelopesPage() {
   const [pendingDelete, setPendingDelete]   = useState<Envelope | null>(null)
   const [newlyAddedId,  setNewlyAddedId]    = useState<string | null>(null)
   const [isAdding,      setIsAdding]        = useState(false)
+  const [checkingId,    setCheckingId]      = useState<string | null>(null)
 
   useEffect(() => { fetch() }, [fetch])
 
@@ -204,14 +212,22 @@ export function EnvelopesPage() {
     }
   }
 
+  async function handleDeleteClick(envelope: Envelope) {
+    setCheckingId(envelope.id)
+    try {
+      const blocker = await getDeleteBlocker(envelope.id, envelopes)
+      if (blocker) {
+        toast(blocker, 'error')
+        return
+      }
+      setPendingDelete(envelope)
+    } finally {
+      setCheckingId(null)
+    }
+  }
+
   async function handleDeleteConfirm() {
     if (!pendingDelete) return
-    const blocker = await getDeleteBlocker(pendingDelete.id, envelopes)
-    if (blocker) {
-      toast(blocker, 'error')
-      setPendingDelete(null)
-      return
-    }
     try {
       await remove(pendingDelete.id)
       toast('Envelope deleted')
@@ -284,8 +300,10 @@ export function EnvelopesPage() {
                 isChild={false}
                 onRename={handleRename}
                 onAddChild={handleAddChild}
-                onDelete={setPendingDelete}
+                onDelete={handleDeleteClick}
+                isDeleting={checkingId === env.id}
                 autoFocus={newlyAddedId === env.id}
+                onFocused={() => setNewlyAddedId(null)}
               />
               {/* Children */}
               {childrenOf(env.id).map(child => (
@@ -295,8 +313,10 @@ export function EnvelopesPage() {
                   isChild={true}
                   onRename={handleRename}
                   onAddChild={handleAddChild}
-                  onDelete={setPendingDelete}
+                  onDelete={handleDeleteClick}
+                  isDeleting={checkingId === child.id}
                   autoFocus={newlyAddedId === child.id}
+                  onFocused={() => setNewlyAddedId(null)}
                 />
               ))}
             </div>

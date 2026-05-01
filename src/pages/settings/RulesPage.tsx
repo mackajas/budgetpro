@@ -85,6 +85,8 @@ export function RulesPage() {
       if (error) throw error
       setRules(rs => [...rs, data as CategoryRule].sort((a, b) => a.priority - b.priority))
       setKeyword('')
+      setEnvId('')
+      setPriority('50')
       toast('Rule added')
     } catch {
       toast('Failed to add rule', 'error')

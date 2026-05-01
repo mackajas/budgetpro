@@ -128,7 +128,7 @@ function AllocRow({ envelope, isChild, alloc, preview, onChange, onBlur }: Alloc
 
   return (
     <div
-      className={`flex items-center gap-3 border-b px-4 py-2.5 text-sm ${isChild ? 'pl-8' : ''}`}
+      className={`flex items-center gap-3 border-b px-4 py-2.5 text-sm ${isChild ? 'pl-8 relative' : ''}`}
       style={{ borderColor: 'var(--border)' }}
     >
       {isChild && <span className="child-envelope-rule" />}
@@ -198,6 +198,9 @@ function TabPanel({ employerId, gross, envelopes }: TabPanelProps) {
   const [allocs, setAllocs]   = useState<Record<string, LocalAlloc>>({})
   const [loading, setLoading] = useState(true)
   const serverRef             = useRef<Record<string, { type: AllocType; value: number }>>({})
+  // Always-current ref so handleBlur never reads a stale closure
+  const allocsRef             = useRef(allocs)
+  useEffect(() => { allocsRef.current = allocs }, [allocs])
 
   // Load allocations for this employer on mount / employer change
   useEffect(() => {
@@ -223,7 +226,9 @@ function TabPanel({ employerId, gross, envelopes }: TabPanelProps) {
   }, [])
 
   const handleBlur = useCallback(async (id: string) => {
-    const local  = allocs[id]
+    // Read from ref to get the latest allocs even if onChange and onBlur
+    // fire in the same event loop tick (e.g. selecting from a dropdown)
+    const local  = allocsRef.current[id]
     const server = serverRef.current[id]
     if (!local) return
 
@@ -252,7 +257,7 @@ function TabPanel({ employerId, gross, envelopes }: TabPanelProps) {
       serverRef.current[id] = { type: local.type, value: numVal }
       toast('Allocation saved')
     })
-  }, [allocs, employerId, withSave, toast])
+  }, [employerId, withSave, toast])
 
   // ── Preview calculations ───────────────────────────────────────────────────
 
