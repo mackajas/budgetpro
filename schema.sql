@@ -147,30 +147,30 @@ alter table settings             enable row level security;
 
 -- All tables require a valid JWT with role = 'household'
 create policy household_access on envelopes
-  for all using ((auth.jwt() ->> 'role') = 'household');
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
 
 create policy household_access on transactions
-  for all using ((auth.jwt() ->> 'role') = 'household');
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
 
 create policy household_access on envelope_allocations
-  for all using ((auth.jwt() ->> 'role') = 'household');
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
 
 create policy household_access on category_rules
-  for all using ((auth.jwt() ->> 'role') = 'household');
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
 
 create policy household_access on bank_accounts
-  for all using ((auth.jwt() ->> 'role') = 'household');
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
 
 create policy household_access on reconciliation_history
-  for all using ((auth.jwt() ->> 'role') = 'household');
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
 
 -- login_attempts: written by Edge Function via service role (bypasses RLS).
 -- household users can read their own attempts for display purposes.
 create policy household_access on login_attempts
-  for select using ((auth.jwt() ->> 'role') = 'household');
+  for select using ((auth.jwt() ->> 'app_role') = 'household');
 
 create policy household_access on settings
-  for all using ((auth.jwt() ->> 'role') = 'household');
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
 
 
 -- ── Default category rules seed ──────────────────────────────────────────

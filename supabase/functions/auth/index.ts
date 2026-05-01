@@ -155,7 +155,10 @@ async function handleLogin(req: Request): Promise<Response> {
   await recordAttempt(ip, true)
 
   const now = Math.floor(Date.now() / 1000)
-  const token = await signJwt({ role: 'household' })
+  // role:'authenticated' maps to the standard Supabase PostgreSQL role so
+  // PostgREST can switch to it (a custom 'household' role doesn't exist in the DB).
+  // app_role:'household' is our custom claim checked by RLS policies.
+  const token = await signJwt({ role: 'authenticated', app_role: 'household' })
 
   return new Response(
     JSON.stringify({ token, expiresAt: (now + COOKIE_MAX_AGE) * 1000 }),
@@ -179,7 +182,7 @@ async function handleVerify(req: Request): Promise<Response> {
   }
 
   const payload = await verifyJwt(token)
-  if (!payload || payload.role !== 'household') {
+  if (!payload || payload.app_role !== 'household') {
     return Response.json({ error: 'Unauthorised' }, { status: 401, headers: corsHeaders })
   }
 
@@ -198,7 +201,7 @@ async function handleChangePassword(req: Request): Promise<Response> {
   const sessionToken = xBpToken ?? cookies[COOKIE_NAME] ?? null
   const payload      = sessionToken ? await verifyJwt(sessionToken) : null
 
-  if (!payload || payload.role !== 'household') {
+  if (!payload || payload.app_role !== 'household') {
     return Response.json({ error: 'Unauthorised' }, { status: 401, headers: corsHeaders })
   }
 
