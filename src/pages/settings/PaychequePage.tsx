@@ -124,7 +124,7 @@ export function PaychequePage() {
 
   if (isLoading || !settings) {
     return (
-      <div className="p-6 max-w-2xl">
+      <div className="p-4 lg:p-6 max-w-2xl">
         <div className="page-header">
           <div className="flex items-center gap-3">
             <Link to="/settings"
@@ -143,7 +143,7 @@ export function PaychequePage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 lg:p-6 max-w-2xl">
       <div className="page-header">
         <div className="flex items-center gap-3">
           <Link to="/settings"

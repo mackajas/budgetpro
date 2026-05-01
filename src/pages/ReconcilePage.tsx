@@ -324,7 +324,7 @@ export function ReconcilePage() {
   const noAccounts = !isLoading && accounts.length === 0
 
   return (
-    <div className="p-6">
+    <div className="p-4 lg:p-6">
       {/* Page header */}
       <div className="page-header">
         <h1 className="page-title">Reconcile</h1>

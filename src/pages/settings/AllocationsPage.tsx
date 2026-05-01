@@ -371,7 +371,7 @@ export function AllocationsPage() {
   const tabInactive = `${tabBase}`
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 lg:p-6 max-w-2xl">
       {/* Page header */}
       <div className="page-header">
         <div className="flex items-center gap-3">

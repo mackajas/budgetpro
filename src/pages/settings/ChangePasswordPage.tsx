@@ -103,7 +103,7 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <div className="p-6 max-w-md">
+    <div className="p-4 lg:p-6 max-w-md">
       <div className="page-header">
         <div className="flex items-center gap-2">
           <Link to="/settings" className="flex h-8 w-8 items-center justify-center rounded-md

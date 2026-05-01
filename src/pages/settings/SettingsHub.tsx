@@ -18,7 +18,7 @@ export function SettingsHub() {
   const { theme, toggleTheme } = useTheme()
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 lg:p-6 max-w-2xl">
       <div className="page-header">
         <h1 className="page-title">Settings</h1>
       </div>

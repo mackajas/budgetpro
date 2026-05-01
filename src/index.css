@@ -117,7 +117,7 @@ body {
 
   /* Table rows */
   .table-row {
-    @apply flex items-center gap-3 border-b py-3 text-sm;
+    @apply flex items-center gap-3 border-b px-4 py-3 text-sm;
     border-color: var(--border);
   }
   .table-row:last-child { border-bottom: none; }
@@ -160,11 +160,11 @@ body {
 
   /* Modal overlay */
   .modal-overlay {
-    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    @apply fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4;
     background-color: rgba(0, 0, 0, 0.6);
   }
   .modal {
-    @apply card w-full max-w-lg rounded-xl p-6 shadow-xl;
+    @apply card w-full max-w-lg rounded-t-xl sm:rounded-xl p-5 sm:p-6 shadow-xl max-h-[90dvh] overflow-y-auto;
   }
 
   /* Sidebar nav link */

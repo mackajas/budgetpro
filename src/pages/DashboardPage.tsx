@@ -294,18 +294,18 @@ export function DashboardPage() {
   const noEnvelopes = !isLoading && envelopes.length === 0
 
   return (
-    <div className="p-6">
+    <div className="p-4 lg:p-6">
       {/* Page header */}
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
         <div className="flex gap-2">
           <button className="btn-ghost" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4" />
-            Import
+            <span className="hidden sm:inline">Import</span>
           </button>
           <button className="btn-primary" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4" />
-            Add transaction
+            <span className="hidden sm:inline">Add transaction</span>
           </button>
         </div>
       </div>
