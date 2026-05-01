@@ -20,26 +20,30 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set) =>
 
   fetch: async () => {
     set({ isLoading: true, error: null })
+    // maybeSingle() returns data:null (no error) when no row found,
+    // unlike single() which throws PGRST116 for 0 rows.
     const { data, error } = await supabase
       .from('settings')
       .select('*')
       .eq('id', 1)
-      .single()
+      .maybeSingle()
     if (error) {
       set({ isLoading: false, error: error.message })
     } else {
-      set({ settings: data as Settings, isLoading: false })
+      set({ settings: data as Settings | null, isLoading: false })
     }
   },
 
   update: async (patch) => {
+    // upsert creates the row (id=1) on first save if it doesn't exist yet.
     const { error } = await supabase
       .from('settings')
-      .update(patch)
-      .eq('id', 1)
+      .upsert({ id: 1, ...patch }, { onConflict: 'id' })
     if (error) throw new Error(error.message)
     set(s => ({
-      settings: s.settings ? { ...s.settings, ...patch } : s.settings,
+      settings: s.settings
+        ? { ...s.settings, ...patch }
+        : { id: 1, ...patch } as Settings,
     }))
   },
 }))

@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft }             from 'lucide-react'
+import { ChevronLeft, AlertCircle } from 'lucide-react'
 import { Link }                    from 'react-router-dom'
 import { useEnvelopeStore }        from '../../stores/useEnvelopeStore'
 import { useToast }                from '../../contexts/ToastContext'
@@ -98,6 +98,7 @@ export function OpeningBalancesPage() {
 
   const [openingTxs,  setOpeningTxs]  = useState<Transaction[]>([])
   const [txLoading,   setTxLoading]   = useState(false)
+  const [txError,     setTxError]     = useState<string | null>(null)
 
   // Load envelopes + opening-balance transactions
   useEffect(() => {
@@ -107,6 +108,7 @@ export function OpeningBalancesPage() {
 
   async function loadOpeningBalances() {
     setTxLoading(true)
+    setTxError(null)
     try {
       const { data, error } = await supabase
         .from('transactions')
@@ -115,7 +117,9 @@ export function OpeningBalancesPage() {
         .eq('deleted', false)
       if (error) throw error
       setOpeningTxs((data ?? []) as Transaction[])
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load opening balances'
+      setTxError(msg)
       toast('Failed to load opening balances', 'error')
     } finally {
       setTxLoading(false)
@@ -207,7 +211,23 @@ export function OpeningBalancesPage() {
         </div>
       )}
 
-      {!isLoading && leafEnvelopes.length === 0 && (
+      {!isLoading && txError && (
+        <div
+          className="card p-5 flex flex-col items-center gap-3 text-center"
+          style={{ color: 'var(--danger)' }}
+        >
+          <AlertCircle className="h-6 w-6 shrink-0" />
+          <div>
+            <p className="text-sm font-medium mb-1">Failed to load opening balances</p>
+            <p className="text-xs" style={{ color: 'var(--text-subtle)' }}>{txError}</p>
+          </div>
+          <button className="btn-ghost text-sm" onClick={loadOpeningBalances}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!isLoading && !txError && leafEnvelopes.length === 0 && (
         <div className="card">
           <div className="empty-state py-10">
             <p className="empty-state-title">No envelopes yet</p>
@@ -221,7 +241,7 @@ export function OpeningBalancesPage() {
         </div>
       )}
 
-      {!isLoading && leafEnvelopes.length > 0 && (
+      {!isLoading && !txError && leafEnvelopes.length > 0 && (
         <div className="card overflow-hidden">
           {/* Column headers */}
           <div

@@ -122,19 +122,23 @@ export function PaychequePage() {
 
   const str  = (v: string | number | null | undefined) => v != null ? String(v) : ''
 
-  if (isLoading || !settings) {
+  const header = (
+    <div className="page-header">
+      <div className="flex items-center gap-3">
+        <Link to="/settings"
+          className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+          style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+          <ChevronLeft className="h-4 w-4" />
+        </Link>
+        <h1 className="page-title">Paycheque</h1>
+      </div>
+    </div>
+  )
+
+  if (isLoading) {
     return (
       <div className="p-4 lg:p-6 max-w-2xl">
-        <div className="page-header">
-          <div className="flex items-center gap-3">
-            <Link to="/settings"
-              className="flex h-8 w-8 items-center justify-center rounded-md"
-              style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
-            <h1 className="page-title">Paycheque</h1>
-          </div>
-        </div>
+        {header}
         <div className="card p-8 text-center">
           <span className="spinner" style={{ color: 'var(--text-subtle)' }} />
         </div>
@@ -144,28 +148,19 @@ export function PaychequePage() {
 
   return (
     <div className="p-4 lg:p-6 max-w-2xl">
-      <div className="page-header">
-        <div className="flex items-center gap-3">
-          <Link to="/settings"
-            className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-          <h1 className="page-title">Paycheque</h1>
-        </div>
-      </div>
+      {header}
 
       {/* ── Employer 1 ──────────────────────────────────────────────────── */}
       <SectionCard title="Employer 1">
         <FieldImpl
           label="Employer name"
-          serverValue={str(settings.employer_name_1)}
+          serverValue={str(settings?.employer_name_1)}
           placeholder="e.g. Acme Corp"
           onSave={saveField('employer_name_1')}
         />
         <FieldImpl
           label="Fortnightly gross ($)"
-          serverValue={str(settings.employer_1_gross)}
+          serverValue={str(settings?.employer_1_gross)}
           type="number"
           placeholder="e.g. 5000"
           onSave={saveField('employer_1_gross')}
@@ -173,7 +168,7 @@ export function PaychequePage() {
         <FieldImpl
           label="Detection keyword"
           hint="Case-insensitive substring matched against the bank transaction description to identify paycheques"
-          serverValue={str(settings.employer_1_keyword)}
+          serverValue={str(settings?.employer_1_keyword)}
           placeholder="e.g. ACME CORP PAYROLL"
           onSave={saveField('employer_1_keyword')}
         />
@@ -183,7 +178,7 @@ export function PaychequePage() {
       <SectionCard title="Employer 2">
         <FieldImpl
           label="Employer name"
-          serverValue={str(settings.employer_name_2)}
+          serverValue={str(settings?.employer_name_2)}
           placeholder="e.g. Big Co"
           onSave={saveField('employer_name_2')}
         />
@@ -200,7 +195,7 @@ export function PaychequePage() {
         <div className="grid grid-cols-2 gap-3">
           <FieldImpl
             label="Amount ($)"
-            serverValue={str(settings.employer_2_pay_1)}
+            serverValue={str(settings?.employer_2_pay_1)}
             type="number"
             placeholder="e.g. 3000"
             onSave={saveField('employer_2_pay_1')}
@@ -208,7 +203,7 @@ export function PaychequePage() {
           <FieldImpl
             label="Detection keyword"
             hint="Substring matched against bank description for this pay component"
-            serverValue={str(settings.employer_2_pay_1_keyword)}
+            serverValue={str(settings?.employer_2_pay_1_keyword)}
             placeholder="e.g. BIG CO SALARY"
             onSave={saveField('employer_2_pay_1_keyword')}
           />
@@ -223,7 +218,7 @@ export function PaychequePage() {
         <div className="grid grid-cols-2 gap-3">
           <FieldImpl
             label="Amount ($)"
-            serverValue={str(settings.employer_2_pay_2)}
+            serverValue={str(settings?.employer_2_pay_2)}
             type="number"
             placeholder="e.g. 800"
             onSave={saveField('employer_2_pay_2')}
@@ -231,7 +226,7 @@ export function PaychequePage() {
           <FieldImpl
             label="Detection keyword"
             hint="Substring matched against bank description for this pay component"
-            serverValue={str(settings.employer_2_pay_2_keyword)}
+            serverValue={str(settings?.employer_2_pay_2_keyword)}
             placeholder="e.g. BIG CO SUPER"
             onSave={saveField('employer_2_pay_2_keyword')}
           />
