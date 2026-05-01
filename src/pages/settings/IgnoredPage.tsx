@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { ChevronLeft, RotateCcw }        from 'lucide-react'
+import { ChevronLeft, RotateCcw, AlertCircle } from 'lucide-react'
 import { Link }                          from 'react-router-dom'
 import { supabase }                      from '../../lib/supabase'
 import { formatCurrency, formatDate }    from '../../lib/formatters'
@@ -19,6 +19,7 @@ export function IgnoredPage() {
 
   const [ignored,   setIgnored]   = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [unignoring, setUnignoring] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export function IgnoredPage() {
 
   async function load() {
     setIsLoading(true)
+    setLoadError(null)
     try {
       const { data, error } = await supabase
         .from('transactions')
@@ -36,7 +38,9 @@ export function IgnoredPage() {
         .order('date', { ascending: false })
       if (error) throw error
       setIgnored((data ?? []) as Transaction[])
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load ignored transactions'
+      setLoadError(msg)
       toast('Failed to load ignored transactions', 'error')
     } finally {
       setIsLoading(false)
@@ -84,7 +88,21 @@ export function IgnoredPage() {
         </div>
       )}
 
-      {!isLoading && ignored.length === 0 && (
+      {!isLoading && loadError && (
+        <div
+          className="card p-5 flex flex-col items-center gap-3 text-center"
+          style={{ color: 'var(--danger)' }}
+        >
+          <AlertCircle className="h-6 w-6 shrink-0" />
+          <div>
+            <p className="text-sm font-medium mb-1">Failed to load ignored transactions</p>
+            <p className="text-xs" style={{ color: 'var(--text-subtle)' }}>{loadError}</p>
+          </div>
+          <button className="btn-ghost text-sm" onClick={load}>Retry</button>
+        </div>
+      )}
+
+      {!isLoading && !loadError && ignored.length === 0 && (
         <div className="card">
           <div className="empty-state py-10">
             <p className="empty-state-title">No ignored transactions</p>
@@ -95,7 +113,7 @@ export function IgnoredPage() {
         </div>
       )}
 
-      {!isLoading && ignored.length > 0 && (
+      {!isLoading && !loadError && ignored.length > 0 && (
         <div className="card overflow-hidden">
           {/* Column headers */}
           <div
