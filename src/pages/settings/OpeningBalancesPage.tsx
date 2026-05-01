@@ -118,7 +118,7 @@ export function OpeningBalancesPage() {
       if (error) throw error
       setOpeningTxs((data ?? []) as Transaction[])
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load opening balances'
+      const msg = (err as { message?: string })?.message ?? 'Failed to load opening balances'
       setTxError(msg)
       toast('Failed to load opening balances', 'error')
     } finally {

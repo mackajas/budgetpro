@@ -39,7 +39,7 @@ export function IgnoredPage() {
       if (error) throw error
       setIgnored((data ?? []) as Transaction[])
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load ignored transactions'
+      const msg = (err as { message?: string })?.message ?? 'Failed to load ignored transactions'
       setLoadError(msg)
       toast('Failed to load ignored transactions', 'error')
     } finally {
