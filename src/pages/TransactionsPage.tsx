@@ -228,7 +228,7 @@ export function TransactionsPage() {
     applyFilters({ unassigned: v })
   }
 
-  useEffect(() => { fetchPage() }, [fetchPage])
+  useEffect(() => { void fetchPage() }, [fetchPage])
 
   return (
     <div className="p-4 lg:p-6">

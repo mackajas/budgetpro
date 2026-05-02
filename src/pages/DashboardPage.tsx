@@ -252,9 +252,9 @@ export function DashboardPage() {
   const [importOpen, setImportOpen] = useState(false)
 
   useEffect(() => {
-    fetchAll()
-    fetchEnvelopes()
-    fetchSettings()
+    void fetchAll()
+    void fetchEnvelopes()
+    void fetchSettings()
   }, [fetchAll, fetchEnvelopes, fetchSettings])
 
   // ── Balance maps ───────────────────────────────────────────────────────────

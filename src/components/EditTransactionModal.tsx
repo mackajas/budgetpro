@@ -200,10 +200,24 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
   const [saving,      setSaving]      = useState(false)
   const [confirming,  setConfirming]  = useState(false)
 
+  // Local draft state for editable fields on non-imported transactions (BUG-04 fix:
+  // previously these called update() on every keystroke, writing to the DB in real-time)
+  const [draftDate,   setDraftDate]   = useState(tx.date)
+  const [draftAmount, setDraftAmount] = useState(String(tx.amount))
+  const [draftDesc,   setDraftDesc]   = useState(tx.description)
+
   async function handleSave() {
     setSaving(true)
     try {
       const patch: Partial<Transaction> = { notes: notes || null }
+
+      // Include manually-entered field edits only for non-imported transactions
+      if (!isImported) {
+        const parsedAmount = parseFloat(draftAmount)
+        patch.date        = draftDate || tx.date
+        patch.amount      = isNaN(parsedAmount) ? tx.amount : parsedAmount
+        patch.description = draftDesc.trim() || tx.description
+      }
 
       if (!isPaycheque && !isOpeningBal) {
         patch.kind       = kind
@@ -282,20 +296,22 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Date</label>
-                    <input className="input text-sm" type="date" defaultValue={tx.date}
-                      onChange={e => update(tx.id, { date: e.target.value })} />
+                    <input className="input text-sm" type="date"
+                      value={draftDate}
+                      onChange={e => setDraftDate(e.target.value)} />
                   </div>
                   <div>
                     <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Amount</label>
                     <input className="input text-sm" type="number" step="0.01"
-                      defaultValue={tx.amount}
-                      onChange={e => update(tx.id, { amount: parseFloat(e.target.value) || 0 })} />
+                      value={draftAmount}
+                      onChange={e => setDraftAmount(e.target.value)} />
                   </div>
                 </div>
                 <div>
                   <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Description</label>
-                  <input className="input text-sm" defaultValue={tx.description}
-                    onChange={e => update(tx.id, { description: e.target.value })} />
+                  <input className="input text-sm"
+                    value={draftDesc}
+                    onChange={e => setDraftDesc(e.target.value)} />
                 </div>
                 <div>
                   <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Kind</label>

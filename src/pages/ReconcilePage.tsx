@@ -267,10 +267,10 @@ export function ReconcilePage() {
   const [historyOpen,   setHistoryOpen]   = useState(false)
 
   useEffect(() => {
-    fetch()
-    fetchAll()
-    fetchEnvelopes()
-    fetchReconciliations()
+    void fetch()
+    void fetchAll()
+    void fetchEnvelopes()
+    void fetchReconciliations()
   }, [fetch, fetchAll, fetchEnvelopes, fetchReconciliations])
 
   // ── Totals ─────────────────────────────────────────────────────────────────

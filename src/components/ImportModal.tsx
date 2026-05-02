@@ -176,6 +176,11 @@ export function ImportModal({ onClose }: Props) {
       setFileError((file as File & { _error?: string })._error!)
       return
     }
+    // Guard: settings must be loaded before we can run the import pipeline (BUG-03 fix)
+    if (!settings) {
+      toast('Settings not loaded yet — please wait a moment', 'error')
+      return
+    }
     setFileError(null)
     setParseError(null)
     setStage('parsing')
@@ -193,7 +198,7 @@ export function ImportModal({ onClose }: Props) {
       // Run pipeline (parses file, classifies rows)
       const result = await runImportPipeline({
         file,
-        settings:    settings!,
+        settings,
         envelopes,
         allocations,
         rules,
