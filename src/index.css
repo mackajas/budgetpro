@@ -115,13 +115,16 @@ body {
     padding-right: 28px;
   }
 
-  /* Table rows — flex (used by Dashboard, Reconcile, etc.) */
-  .table-row {
+  /* List rows — flex (used by Dashboard envelope rows, etc.)
+     NOTE: intentionally NOT named "table-row" — that collides with
+     Tailwind's built-in table-row utility (display: table-row) which
+     overrides display: flex via the utilities layer cascade. */
+  .list-row {
     @apply flex items-center gap-3 border-b px-4 py-3 text-sm;
     border-color: var(--border);
   }
-  .table-row:last-child { border-bottom: none; }
-  .table-row:hover { background-color: var(--surface-2); }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background-color: var(--surface-2); }
 
   /* Transaction table rows — grid (guarantees column alignment) */
   .tx-row {

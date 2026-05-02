@@ -85,7 +85,7 @@ function EnvRow({
   const isDown = balance < 0
   return (
     <button
-      className={`table-row w-full text-left ${isChild ? 'pl-8 relative' : ''}`}
+      className={`list-row w-full text-left ${isChild ? 'pl-8 relative' : ''}`}
       onClick={onClick}
     >
       {isChild && <span className="child-envelope-rule" />}
