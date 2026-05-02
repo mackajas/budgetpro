@@ -115,36 +115,40 @@ export function IgnoredPage() {
 
       {!isLoading && !loadError && ignored.length > 0 && (
         <div className="card overflow-hidden">
-          {/* Column headers */}
+          {/* Column headers — grid: date(6rem) | description(1fr) | amount(6rem) | button(5rem) */}
           <div
-            className="hidden sm:flex items-center gap-3 px-4 py-2 text-xs border-b"
-            style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
+            className="hidden sm:grid items-center gap-3 px-4 py-2 text-xs border-b"
+            style={{
+              gridTemplateColumns: '6rem 1fr 6rem 5rem',
+              borderColor: 'var(--border)',
+              background: 'var(--surface-2)',
+            }}
           >
-            <span className="w-24 section-label">Date</span>
-            <span className="flex-1 section-label">Description</span>
-            <span className="w-24 text-right section-label">Amount</span>
-            <span className="w-20" />
+            <span className="section-label">Date</span>
+            <span className="section-label">Description</span>
+            <span className="text-right section-label">Amount</span>
+            <span />
           </div>
 
           {ignored.map(tx => (
             <div
               key={tx.id}
-              className="flex flex-wrap items-center gap-3 border-b px-4 py-3 last:border-b-0 text-sm"
-              style={{ borderColor: 'var(--border)' }}
+              className="grid items-center gap-3 border-b px-4 py-3 last:border-b-0 text-sm"
+              style={{ gridTemplateColumns: '6rem 1fr 6rem 5rem', borderColor: 'var(--border)' }}
             >
-              <span className="w-24 shrink-0 tabular-nums text-xs"
+              <span className="tabular-nums text-xs truncate"
                 style={{ color: 'var(--text-muted)' }}>
                 {formatDate(tx.date)}
               </span>
-              <span className="flex-1 min-w-0 truncate" style={{ color: 'var(--text)' }}>
+              <span className="min-w-0 truncate" style={{ color: 'var(--text)' }}>
                 {tx.description}
               </span>
-              <span className="w-24 text-right tabular-nums font-medium"
+              <span className="text-right tabular-nums font-medium"
                 style={{ color: 'var(--text-muted)' }}>
                 {formatCurrency(tx.amount)}
               </span>
               <button
-                className="flex items-center gap-1 text-xs transition-opacity hover:opacity-70 w-20 justify-end"
+                className="flex items-center justify-end gap-1 text-xs transition-opacity hover:opacity-70"
                 style={{ color: 'var(--pink)' }}
                 onClick={() => handleUnignore(tx)}
                 disabled={unignoring.has(tx.id)}
