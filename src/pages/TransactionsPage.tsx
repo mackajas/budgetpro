@@ -35,18 +35,23 @@ const KINDS: TransactionKind[] = [
   'income-other','opening-balance','ignored',
 ]
 
+// Grid column template — must match the header row exactly
+// Columns: date(7rem) | description(1fr) | envelope(8rem) | badge(2rem) | amount(6rem)
+const TX_GRID = '7rem 1fr 8rem 2rem 6rem'
+
 // ── Row ───────────────────────────────────────────────────────────────────────
 
 function TxRow({ tx, envelopes, onEdit }: {
   tx: Transaction; envelopes: Envelope[]; onEdit: (t: Transaction) => void
 }) {
-  const isIncome = tx.amount > 0
+  const isIncome    = tx.amount > 0
   const amountColour = isIncome ? 'var(--success)' : 'var(--text-muted)'
+  const hasReview   = tx.review && !tx.envelope_id && !(tx.splits && Object.keys(tx.splits).length > 0)
 
   return (
-    /* Desktop: flex row — Mobile: stacked card */
     <div
-      className="table-row flex-wrap cursor-pointer select-none"
+      className="tx-row cursor-pointer select-none"
+      style={{ gridTemplateColumns: TX_GRID }}
       onClick={() => onEdit(tx)}
       role="button"
       tabIndex={0}
@@ -54,34 +59,35 @@ function TxRow({ tx, envelopes, onEdit }: {
       aria-label={`Edit transaction: ${tx.description}`}
     >
       {/* Date */}
-      <span className="w-28 shrink-0 tabular-nums text-xs" style={{ color: 'var(--text-muted)' }}>
+      <span className="tabular-nums text-xs truncate" style={{ color: 'var(--text-muted)' }}>
         {formatDate(tx.date)}
       </span>
 
       {/* Description */}
-      <span className="flex-1 min-w-0 truncate text-sm" style={{ color: 'var(--text)' }}>
+      <span className="min-w-0 truncate text-sm" style={{ color: 'var(--text)' }}>
         {tx.description}
       </span>
 
-      {/* Envelope */}
-      <span className="w-32 shrink-0 truncate text-xs hidden sm:block"
-        style={{ color: 'var(--text-muted)' }}>
+      {/* Envelope — hidden on mobile, visible sm+ */}
+      <span className="truncate text-xs hidden sm:block" style={{ color: 'var(--text-muted)' }}>
         {envelopeName(tx.envelope_id, envelopes, tx.splits)}
       </span>
 
-      {/* Review badge */}
-      {tx.review && !tx.envelope_id && !(tx.splits && Object.keys(tx.splits).length > 0) && (
-        <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-          style={{
-            background: 'color-mix(in srgb, #f59e0b 15%, transparent)',
-            color: '#d97706',
-          }}>
-          Review
-        </span>
-      )}
+      {/* Review badge — fixed slot, empty when not in review */}
+      <span className="flex items-center">
+        {hasReview && (
+          <span className="rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+            style={{
+              background: 'color-mix(in srgb, #f59e0b 15%, transparent)',
+              color: '#d97706',
+            }}>
+            Review
+          </span>
+        )}
+      </span>
 
       {/* Amount */}
-      <span className="w-24 shrink-0 text-right text-sm font-medium tabular-nums"
+      <span className="text-right text-sm font-medium tabular-nums"
         style={{ color: amountColour }}>
         {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
       </span>
@@ -263,23 +269,26 @@ export function TransactionsPage() {
       {/* Table */}
       <div className="card overflow-hidden">
         {/* Column headers — desktop */}
-        <div className="hidden sm:flex items-center gap-3 border-b px-4 py-2 text-xs"
-          style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}>
-          <span className="w-28 section-label">Date</span>
-          <span className="flex-1 section-label">Description</span>
-          <span className="w-32 section-label">Envelope</span>
-          <span className="w-8" />  {/* review badge space */}
-          <span className="w-24 text-right section-label">Amount</span>
+        <div className="hidden sm:grid items-center gap-3 border-b px-4 py-2 text-xs"
+          style={{ gridTemplateColumns: TX_GRID, borderColor: 'var(--border)', background: 'var(--surface-2)' }}>
+          <span className="section-label">Date</span>
+          <span className="section-label">Description</span>
+          <span className="section-label">Envelope</span>
+          <span />  {/* review badge space */}
+          <span className="text-right section-label">Amount</span>
         </div>
 
         {/* Loading skeleton */}
         {isLoading && (
           <div className="flex flex-col">
             {[...Array(5)].map((_, i) => (
-              <div key={`skeleton-${i}`} className="table-row animate-pulse">
-                <span className="h-3 w-20 rounded" style={{ background: 'var(--border)' }} />
-                <span className="h-3 flex-1 rounded" style={{ background: 'var(--border)' }} />
-                <span className="h-3 w-24 rounded" style={{ background: 'var(--border)' }} />
+              <div key={`skeleton-${i}`} className="tx-row animate-pulse"
+                style={{ gridTemplateColumns: TX_GRID }}>
+                <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
+                <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
+                <span className="h-3 rounded hidden sm:block" style={{ background: 'var(--border)' }} />
+                <span />
+                <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
               </div>
             ))}
           </div>
