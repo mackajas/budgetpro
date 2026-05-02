@@ -40,6 +40,9 @@ export function detectBankFormat(rawHeaders: string[]): BankFormat {
   // ING: has 'description' and 'amount' but no 'balance' column
   if (has('description') && has('amount') && !has('balance')) return 'ing'
 
+  // Coles Credit Card (actual export): single amount + 'transaction details' description
+  if (has('transaction details')) return 'coles-cc'
+
   // CBA: default — has date, amount, description, balance
   return 'cba'
 }

@@ -44,8 +44,15 @@ describe('detectBankFormat', () => {
     expect(detectBankFormat(['Date', 'Narration', 'Debit', 'Credit', 'Balance'])).toBe('bankwest')
   })
 
-  it('T07 — detects Coles Credit Card (separate Debit/Credit + Description, no Balance)', () => {
+  it('T07 — detects Coles Credit Card legacy (separate Debit/Credit + Description, no Balance)', () => {
     expect(detectBankFormat(['Date', 'Description', 'Debit', 'Credit'])).toBe('coles')
+  })
+
+  it('T07b — detects Coles Credit Card actual export (Transaction Details column)', () => {
+    expect(detectBankFormat([
+      'Date', 'Amount', 'Account Number', '', 'Transaction Type',
+      'Transaction Details', 'Category', 'Merchant Name', 'Processed On',
+    ])).toBe('coles-cc')
   })
 })
 
@@ -83,8 +90,28 @@ describe('normaliseRow', () => {
     expect(parseDate('01/04/24')).toBe('2024-04-01')
     // DD-Mon-YYYY (NAB style)
     expect(parseDate('01-Apr-2024')).toBe('2024-04-01')
+    // D-Mon-YY (Coles CC style — 2-digit year)
+    expect(parseDate('2-May-26')).toBe('2026-05-02')
     // Already ISO
     expect(parseDate('2024-04-01')).toBe('2024-04-01')
+  })
+
+  it('T11b — normalises a Coles CC row (Transaction Details, D-Mon-YY date, signed amount)', () => {
+    const row = {
+      Date: '2-May-26',
+      Amount: '-3.89',
+      'Account Number': 'Card ending 2531',
+      '': '',
+      'Transaction Type': 'CREDIT CARD PURCHASE',
+      'Transaction Details': 'COLES 7612 DEER PARK VIC',
+      Category: 'Groceries',
+      'Merchant Name': 'Coles (Brimbank Shopping Centre)',
+      'Processed On': '2-May-26',
+    }
+    const result = normaliseRow(row, 'coles-cc')
+    expect(result.date).toBe('2026-05-02')
+    expect(result.amount).toBe(-3.89)
+    expect(result.description).toBe('COLES 7612 DEER PARK VIC')
   })
 })
 

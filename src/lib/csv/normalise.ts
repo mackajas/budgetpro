@@ -47,12 +47,13 @@ export function parseDate(raw: string): string {
     return `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
   }
 
-  // DD-Mon-YYYY (e.g. "01-Jan-2024") — NAB style
-  const monMatch = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/)
+  // DD-Mon-YYYY (e.g. "01-Jan-2024") or D-Mon-YY (e.g. "2-May-26" — Coles CC)
+  const monMatch = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/)
   if (monMatch) {
     const [, d, mon, y] = monMatch
+    const year = y.length === 2 ? `20${y}` : y
     const m = MONTHS[mon.toLowerCase()]
-    if (m) return `${y}-${m}-${d.padStart(2, '0')}`
+    if (m) return `${year}-${m}-${d.padStart(2, '0')}`
   }
 
   // DD Mon YYYY (e.g. "01 Jan 2024")

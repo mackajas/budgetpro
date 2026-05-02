@@ -16,6 +16,7 @@ export type BankFormat =
   | 'ing'
   | 'bankwest'
   | 'coles'
+  | 'coles-cc'
 
 /** Structural family — drives amount parsing in normaliseRow */
 export type AmountStructure = 'single' | 'debit-credit'
@@ -113,5 +114,16 @@ export const FORMAT_SPECS: FormatSpec[] = [
     descCol:         'description',
     amountCol:       'amount',
     dateFormat:      'DD/MM/YYYY',
+  },
+  // ── Coles Credit Card (actual export) ────────────────────────────────────
+  // Distinguisher: uses 'Transaction Details' as the description column
+  // Date format: D-Mon-YY (e.g. "2-May-26") — 2-digit year
+  {
+    format:          'coles-cc',
+    amountStructure: 'single',
+    dateCol:         'date',
+    descCol:         'transaction details',
+    amountCol:       'amount',
+    dateFormat:      'DD-Mon-YYYY',
   },
 ]
