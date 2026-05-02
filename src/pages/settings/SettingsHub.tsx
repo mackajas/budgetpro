@@ -9,7 +9,6 @@ const SETTINGS_PAGES = [
   { to: '/settings/opening-balances', label: 'Opening Balances',   desc: 'Set initial envelope balances'                   },
   { to: '/settings/ignored',          label: 'Ignored Transactions', desc: 'Review transactions excluded from calculations' },
   { to: '/settings/bank-accounts',    label: 'Bank Accounts',      desc: 'Manage accounts used in reconciliation'          },
-  { to: '/settings/appearance',       label: 'Appearance',         desc: 'Dark mode and display preferences'               },
   { to: '/settings/change-password',  label: 'Change Password',    desc: 'Update the household password'                   },
   { to: '/settings/rules',            label: 'Category Rules',     desc: 'Keyword rules for auto-categorising transactions' },
 ]
