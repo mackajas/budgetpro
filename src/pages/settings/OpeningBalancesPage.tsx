@@ -7,7 +7,7 @@
  * Clearing the value soft-deletes the existing opening-balance transaction.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, AlertCircle } from 'lucide-react'
 import { Link }                    from 'react-router-dom'
 import { useEnvelopeStore }        from '../../stores/useEnvelopeStore'
@@ -23,10 +23,12 @@ function OpeningBalanceRow({
   envelope,
   current,
   onSave,
+  isChild = false,
 }: {
   envelope: Envelope
   current:  Transaction | null
   onSave:   (envId: string, amount: number | null) => Promise<void>
+  isChild?: boolean
 }) {
   const { withSave } = useSave()
   const { toast }    = useToast()
@@ -59,9 +61,10 @@ function OpeningBalanceRow({
 
   return (
     <div
-      className="flex items-center justify-between gap-4 px-4 py-3 border-b last:border-b-0"
+      className={`flex items-center justify-between gap-4 px-4 py-3 border-b last:border-b-0 ${isChild ? 'pl-8 relative' : ''}`}
       style={{ borderColor: 'var(--border)' }}
     >
+      {isChild && <span className="child-envelope-rule" />}
       <span className="flex-1 text-sm" style={{ color: 'var(--text)' }}>
         {envelope.name}
       </span>
@@ -126,9 +129,29 @@ export function OpeningBalancesPage() {
     }
   }
 
-  // Only leaf envelopes (no children)
+  // Only leaf envelopes (no children) — used for empty-state check
   const leafEnvelopes = useMemo(
     () => envelopes.filter(e => !envelopes.some(c => c.parent_id === e.id)),
+    [envelopes],
+  )
+
+  // Grouping helpers
+  const parentIds = useMemo(
+    () => new Set(envelopes.filter(e => e.parent_id !== null).map(e => e.parent_id as string)),
+    [envelopes],
+  )
+
+  const topLevel = useMemo(
+    () => envelopes
+      .filter(e => e.parent_id === null)
+      .sort((a, b) => a.display_order - b.display_order),
+    [envelopes],
+  )
+
+  const childrenOf = useCallback(
+    (parentId: string) => envelopes
+      .filter(e => e.parent_id === parentId)
+      .sort((a, b) => a.display_order - b.display_order),
     [envelopes],
   )
 
@@ -255,14 +278,47 @@ export function OpeningBalancesPage() {
             <span className="w-28 section-label text-right">Current</span>
           </div>
 
-          {leafEnvelopes.map(env => (
-            <OpeningBalanceRow
-              key={env.id}
-              envelope={env}
-              current={txByEnvelope.get(env.id) ?? null}
-              onSave={handleSave}
-            />
-          ))}
+          {topLevel.map(env => {
+            const children = childrenOf(env.id)
+            const isParent = parentIds.has(env.id)
+
+            if (isParent) {
+              return (
+                <div key={env.id}>
+                  {/* Parent group header */}
+                  <div
+                    className="px-4 py-2 text-xs font-semibold border-b"
+                    style={{
+                      borderColor: 'var(--border)',
+                      background:  'var(--surface-2)',
+                      color:       'var(--text-muted)',
+                    }}
+                  >
+                    {env.name}
+                  </div>
+                  {children.map(child => (
+                    <OpeningBalanceRow
+                      key={child.id}
+                      envelope={child}
+                      current={txByEnvelope.get(child.id) ?? null}
+                      onSave={handleSave}
+                      isChild
+                    />
+                  ))}
+                </div>
+              )
+            }
+
+            // Standalone leaf envelope
+            return (
+              <OpeningBalanceRow
+                key={env.id}
+                envelope={env}
+                current={txByEnvelope.get(env.id) ?? null}
+                onSave={handleSave}
+              />
+            )
+          })}
         </div>
       )}
     </div>
