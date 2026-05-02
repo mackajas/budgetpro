@@ -283,18 +283,25 @@ export function OpeningBalancesPage() {
             const isParent = parentIds.has(env.id)
 
             if (isParent) {
+              const groupTotal = children.reduce(
+                (sum, c) => sum + (txByEnvelope.get(c.id)?.amount ?? 0), 0,
+              )
               return (
                 <div key={env.id}>
-                  {/* Parent group header */}
+                  {/* Parent group header — layout mirrors child rows so totals align */}
                   <div
-                    className="px-4 py-2 text-xs font-semibold border-b"
+                    className="flex items-center gap-4 px-4 py-2 text-xs font-semibold border-b"
                     style={{
                       borderColor: 'var(--border)',
                       background:  'var(--surface-2)',
                       color:       'var(--text-muted)',
                     }}
                   >
-                    {env.name}
+                    <span className="flex-1">{env.name}</span>
+                    <span className="w-36" />  {/* spacer: matches input column */}
+                    <span className="w-28 text-right tabular-nums">
+                      {formatCurrency(groupTotal)}
+                    </span>
                   </div>
                   {children.map(child => (
                     <OpeningBalanceRow
