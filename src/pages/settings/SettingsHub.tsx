@@ -35,6 +35,7 @@ export function SettingsHub() {
           onClick={toggleTheme}
           role="switch"
           aria-checked={theme === 'dark'}
+          aria-label="Toggle dark mode"
           className="relative h-6 w-11 rounded-full transition-colors"
           style={{ background: theme === 'dark' ? 'var(--pink)' : 'var(--border-2)' }}
         >

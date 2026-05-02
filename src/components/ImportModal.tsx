@@ -386,8 +386,8 @@ export function ImportModal({ onClose }: Props) {
                   Duplicates ({parseResult.counts.duplicates})
                 </p>
                 <div className="flex flex-col gap-1 max-h-32 overflow-y-auto mb-3">
-                  {rows.filter(r => r.isDuplicate).map((r, i) => (
-                    <label key={i} className="flex items-center gap-2 text-xs cursor-pointer"
+                  {rows.filter(r => r.isDuplicate).map((r) => (
+                    <label key={`${r.date}-${r.description}-${r.amount}`} className="flex items-center gap-2 text-xs cursor-pointer"
                       style={{ color: 'var(--text-muted)' }}>
                       <input
                         type="checkbox"

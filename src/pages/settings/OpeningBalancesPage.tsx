@@ -133,7 +133,9 @@ export function OpeningBalancesPage() {
   )
 
   const txByEnvelope = useMemo(
-    () => new Map(openingTxs.map(t => [t.envelope_id!, t])),
+    () => new Map(
+      openingTxs.filter(t => t.envelope_id).map(t => [t.envelope_id!, t]),
+    ),
     [openingTxs],
   )
 

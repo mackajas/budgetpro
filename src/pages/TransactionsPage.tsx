@@ -275,7 +275,7 @@ export function TransactionsPage() {
         {isLoading && (
           <div className="flex flex-col">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="table-row animate-pulse">
+              <div key={`skeleton-${i}`} className="table-row animate-pulse">
                 <span className="h-3 w-20 rounded" style={{ background: 'var(--border)' }} />
                 <span className="h-3 flex-1 rounded" style={{ background: 'var(--border)' }} />
                 <span className="h-3 w-24 rounded" style={{ background: 'var(--border)' }} />

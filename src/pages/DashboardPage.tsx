@@ -360,10 +360,10 @@ export function DashboardPage() {
                     settings.featured_envelope_1_id,
                     settings.featured_envelope_2_id,
                     settings.featured_envelope_3_id,
-                  ].map((id, i) =>
+                  ].map((id) =>
                     id ? (
                       <FeaturedCard
-                        key={i}
+                        key={id}
                         envelopeId={id}
                         envelopes={envelopes}
                         balances={displayBalances}

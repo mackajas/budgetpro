@@ -18,7 +18,7 @@ import type { TransactionKind, Envelope } from '../types/database'
 
 type Tab = 'expense' | 'cash' | 'other'
 
-interface SplitLine { envelopeId: string; amount: string }
+interface SplitLine { id: string; envelopeId: string; amount: string }
 
 function SplitLines({
   total, envelopes, lines, onChange,
@@ -37,7 +37,7 @@ function SplitLines({
     <div>
       <div className="flex flex-col gap-2 mb-2">
         {lines.map((line, i) => (
-          <div key={i} className="flex gap-2 items-center">
+          <div key={line.id} className="flex gap-2 items-center">
             <select className="select flex-1 py-1.5 text-sm" value={line.envelopeId}
               onChange={e => onChange(lines.map((l, j) => j === i ? { ...l, envelopeId: e.target.value } : l))}>
               <option value="">Select envelope…</option>
@@ -61,7 +61,7 @@ function SplitLines({
       </div>
       <button className="flex items-center gap-1 text-xs mb-2 hover:opacity-70 transition-opacity"
         style={{ color: 'var(--pink)' }}
-        onClick={() => onChange([...lines, { envelopeId: '', amount: '' }])}>
+        onClick={() => onChange([...lines, { id: crypto.randomUUID(), envelopeId: '', amount: '' }])}>
         <Plus className="h-3 w-3" /> Add line
       </button>
       <div className="flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -94,8 +94,8 @@ export function AddTransactionModal({ onClose }: Props) {
   const [notes,       setNotes]       = useState('')
   const [splitMode,   setSplitMode]   = useState(false)
   const [splitLines,  setSplitLines]  = useState<SplitLine[]>([
-    { envelopeId: '', amount: '' },
-    { envelopeId: '', amount: '' },
+    { id: crypto.randomUUID(), envelopeId: '', amount: '' },
+    { id: crypto.randomUUID(), envelopeId: '', amount: '' },
   ])
   const [otherKind,   setOtherKind]   = useState<TransactionKind>('income-other')
   const [saving,      setSaving]      = useState(false)

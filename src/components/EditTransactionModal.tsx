@@ -85,7 +85,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 // ── Split editor ──────────────────────────────────────────────────────────────
 
-interface SplitLine { envelopeId: string; amount: string }
+interface SplitLine { id: string; envelopeId: string; amount: string }
 
 function SplitEditor({
   totalAmount,
@@ -103,9 +103,10 @@ function SplitEditor({
   )
 
   const [lines, setLines] = useState<SplitLine[]>(() => {
-    if (!initial || Object.keys(initial).length === 0) return [{ envelopeId: '', amount: '' }]
+    if (!initial || Object.keys(initial).length === 0)
+      return [{ id: crypto.randomUUID(), envelopeId: '', amount: '' }]
     return Object.entries(initial).map(([envelopeId, amount]) => ({
-      envelopeId, amount: String(amount),
+      id: crypto.randomUUID(), envelopeId, amount: String(amount),
     }))
   })
 
@@ -127,7 +128,7 @@ function SplitEditor({
     <div>
       <div className="flex flex-col gap-2 mb-2">
         {lines.map((line, i) => (
-          <div key={i} className="flex gap-2">
+          <div key={line.id} className="flex gap-2">
             <select
               className="select flex-1 py-1.5 text-sm"
               value={line.envelopeId}
@@ -159,7 +160,7 @@ function SplitEditor({
 
       <button className="flex items-center gap-1 text-xs mb-3 transition-opacity hover:opacity-70"
         style={{ color: 'var(--pink)' }}
-        onClick={() => update([...lines, { envelopeId: '', amount: '' }])}>
+        onClick={() => update([...lines, { id: crypto.randomUUID(), envelopeId: '', amount: '' }])}>
         <Plus className="h-3 w-3" /> Add line
       </button>
 
