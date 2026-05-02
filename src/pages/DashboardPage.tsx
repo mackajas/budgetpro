@@ -15,7 +15,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate, Link }            from 'react-router-dom'
-import { Plus, Upload, AlertTriangle, FolderOpen } from 'lucide-react'
+import { Plus, Upload, AlertTriangle, FolderOpen, ChevronRight } from 'lucide-react'
 import { useTransactionStore } from '../stores/useTransactionStore'
 import { useEnvelopeStore }    from '../stores/useEnvelopeStore'
 import { useSettingsStore }    from '../stores/useSettingsStore'
@@ -89,14 +89,15 @@ function EnvRow({
       onClick={onClick}
     >
       {isChild && <span className="child-envelope-rule" />}
-      <span className="flex-1 text-sm" style={{ color: 'var(--text)' }}>{env.name}</span>
-      {isDown && <span className="badge-overdrawn">Overdrawn</span>}
+      <span className="flex-1 min-w-0 truncate text-sm" style={{ color: 'var(--text)' }}>{env.name}</span>
+      {isDown && <span className="badge-overdrawn shrink-0">Overdrawn</span>}
       <span
-        className="text-sm font-medium tabular-nums"
+        className="shrink-0 text-sm font-medium tabular-nums"
         style={{ color: balanceColour(balance) }}
       >
         {formatCurrency(balance)}
       </span>
+      <ChevronRight className="shrink-0 h-4 w-4" style={{ color: 'var(--text-subtle)' }} />
     </button>
   )
 }
