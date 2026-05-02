@@ -234,7 +234,7 @@ function AccountCard({
           className="text-2xl font-semibold tabular-nums"
           style={{ color: hasBalance ? 'var(--text)' : 'var(--text-subtle)' }}
         >
-          {hasBalance ? formatCurrency(account.balance!) : '—'}
+          {hasBalance ? formatCurrency(account.balance as number) : '—'}
         </p>
         {account.balance_updated_at && (
           <p className="text-xs mt-1" style={{ color: 'var(--text-subtle)' }}>
@@ -291,7 +291,7 @@ export function ReconcilePage() {
   // Sum only leaf (non-parent) envelopes so parent rollups aren't double-counted
   const envelopeTotal = useMemo(() => {
     const parentIds = new Set(
-      envelopes.filter(e => e.parent_id !== null).map(e => e.parent_id!),
+      envelopes.filter(e => e.parent_id !== null).map(e => e.parent_id as string),
     )
     return envelopes
       .filter(e => !parentIds.has(e.id))
@@ -305,7 +305,7 @@ export function ReconcilePage() {
   async function handleReconcile(notes: string) {
     const snapshot = accounts
       .filter(a => a.balance !== null)
-      .map(a => ({ account_name: a.name, balance: a.balance! }))
+      .map(a => ({ account_name: a.name, balance: a.balance as number }))
     try {
       await saveReconciliation({
         bankTotal,

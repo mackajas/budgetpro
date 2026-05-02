@@ -51,6 +51,7 @@ function TxRow({ tx, envelopes, onEdit }: {
       role="button"
       tabIndex={0}
       onKeyDown={e => { if (e.key === 'Enter') onEdit(tx) }}
+      aria-label={`Edit transaction: ${tx.description}`}
     >
       {/* Date */}
       <span className="w-28 shrink-0 tabular-nums text-xs" style={{ color: 'var(--text-muted)' }}>

@@ -266,7 +266,7 @@ export function DashboardPage() {
 
   // ── Envelope classification ────────────────────────────────────────────────
   const parentIds    = useMemo(
-    () => new Set(envelopes.filter(e => e.parent_id !== null).map(e => e.parent_id!)),
+    () => new Set(envelopes.filter(e => e.parent_id !== null).map(e => e.parent_id as string)),
     [envelopes],
   )
   const topLevel     = useMemo(

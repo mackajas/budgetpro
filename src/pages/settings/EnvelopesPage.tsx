@@ -136,6 +136,7 @@ function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, isDele
         <button
           className="btn-ghost px-2 py-1.5 text-xs gap-1"
           title="Add child envelope"
+          aria-label={`Add child envelope to ${envelope.name}`}
           onClick={() => onAddChild(envelope.id)}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -147,6 +148,7 @@ function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, isDele
         className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
         style={{ color: isDeleting ? 'var(--text-subtle)' : 'var(--text-subtle)' }}
         title="Delete envelope"
+        aria-label={`Delete envelope: ${envelope.name}`}
         disabled={isDeleting}
         onClick={() => onDelete(envelope)}
         onMouseEnter={e => { if (!isDeleting) e.currentTarget.style.color = 'var(--danger)' }}
