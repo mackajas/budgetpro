@@ -12,7 +12,7 @@
  *  - Max hierarchy depth = 2 (children cannot have children)
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link }                         from 'react-router-dom'
 import { ChevronLeft, Plus, Trash2, FolderOpen } from 'lucide-react'
 import { useEnvelopeStore }  from '../../stores/useEnvelopeStore'
@@ -83,12 +83,15 @@ interface RowProps {
   autoFocus:    boolean
   /** Called after auto-focus fires so parent can clear the newly-added flag */
   onFocused:    () => void
+  /** Called after Enter is pressed and name is saved — creates the next sibling */
+  onCreateNext?: () => Promise<void>
 }
 
-function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, isDeleting, autoFocus, onFocused }: RowProps) {
+function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, isDeleting, autoFocus, onFocused, onCreateNext }: RowProps) {
   const [value, setValue]   = useState(envelope.name)
   const [saving, setSaving] = useState(false)
   const inputRef            = useRef<HTMLInputElement>(null)
+  const enterPressed        = useRef(false)
 
   // Keep value in sync if the store updates externally
   useEffect(() => { setValue(envelope.name) }, [envelope.name])
@@ -101,14 +104,25 @@ function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, isDele
   }, [autoFocus, onFocused])
 
   async function handleBlur() {
-    const trimmed = value.trim()
+    const trimmed      = value.trim()
+    const didPressEnter = enterPressed.current
+    enterPressed.current = false
+
+    // Empty name — revert and do nothing (don't chain a new envelope)
     if (!trimmed) { setValue(envelope.name); return }
-    if (trimmed === envelope.name) return
-    setSaving(true)
-    try {
-      await onRename(envelope.id, trimmed)
-    } finally {
-      setSaving(false)
+
+    if (trimmed !== envelope.name) {
+      setSaving(true)
+      try {
+        await onRename(envelope.id, trimmed)
+      } finally {
+        setSaving(false)
+      }
+    }
+
+    // Enter was pressed with a valid name → create the next sibling
+    if (didPressEnter && onCreateNext) {
+      await onCreateNext()
     }
   }
 
@@ -123,12 +137,18 @@ function EnvelopeRow({ envelope, isChild, onRename, onAddChild, onDelete, isDele
       <input
         ref={inputRef}
         className="input flex-1 py-1.5 text-sm"
+        placeholder="Envelope name"
         value={value}
         onChange={e => setValue(e.target.value)}
         onBlur={handleBlur}
-        onKeyDown={e => { if (e.key === 'Enter') inputRef.current?.blur() }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            enterPressed.current = true
+            inputRef.current?.blur()
+          }
+        }}
         disabled={saving}
-        aria-label={`Envelope name: ${envelope.name}`}
+        aria-label={`Envelope name: ${envelope.name || 'new envelope'}`}
       />
 
       {/* Add child button — only on top-level envelopes */}
@@ -193,26 +213,26 @@ export function EnvelopesPage() {
     })
   }
 
-  async function handleAddTop() {
+  const handleAddTop = useCallback(async () => {
     setIsAdding(true)
     try {
-      const e = await add('New envelope', null)
+      const e = await add('', null)
       setNewlyAddedId(e.id)
     } catch {
       toast('Failed to add envelope', 'error')
     } finally {
       setIsAdding(false)
     }
-  }
+  }, [add, toast])
 
-  async function handleAddChild(parentId: string) {
+  const handleAddChild = useCallback(async (parentId: string) => {
     try {
-      const e = await add('New envelope', parentId)
+      const e = await add('', parentId)
       setNewlyAddedId(e.id)
     } catch {
       toast('Failed to add child envelope', 'error')
     }
-  }
+  }, [add, toast])
 
   async function handleDeleteClick(envelope: Envelope) {
     setCheckingId(envelope.id)
@@ -306,6 +326,7 @@ export function EnvelopesPage() {
                 isDeleting={checkingId === env.id}
                 autoFocus={newlyAddedId === env.id}
                 onFocused={() => setNewlyAddedId(null)}
+                onCreateNext={handleAddTop}
               />
               {/* Children */}
               {childrenOf(env.id).map(child => (
@@ -319,6 +340,7 @@ export function EnvelopesPage() {
                   isDeleting={checkingId === child.id}
                   autoFocus={newlyAddedId === child.id}
                   onFocused={() => setNewlyAddedId(null)}
+                  onCreateNext={() => handleAddChild(child.parent_id!)}
                 />
               ))}
             </div>
