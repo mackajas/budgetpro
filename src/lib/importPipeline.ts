@@ -42,6 +42,9 @@ export interface ProcessedRow {
   how_categorised: HowCategorised | null
   review:          boolean
 
+  // Source account (set by ImportModal before insert)
+  bank_account_id:  string | null
+
   // Import flags
   isDuplicate:      boolean
   importAnyway:     boolean     // user can override duplicates
@@ -142,6 +145,7 @@ export async function runImportPipeline(params: {
         date: '', amount: 0, description: '',
         kind: 'expense', envelope_id: null, splits: null,
         how_categorised: null, review: false,
+        bank_account_id: null,
         isDuplicate: false, importAnyway: false,
         validationError: `Parse error: ${e instanceof Error ? e.message : String(e)}`,
       })
@@ -155,6 +159,7 @@ export async function runImportPipeline(params: {
         date: normalised.date, amount: normalised.amount, description: normalised.description,
         kind: 'expense', envelope_id: null, splits: null,
         how_categorised: null, review: false,
+        bank_account_id: null,
         isDuplicate: false, importAnyway: false,
         validationError: validation.error,
       })
@@ -215,6 +220,7 @@ export async function runImportPipeline(params: {
     rows.push({
       date, amount, description,
       kind, envelope_id, splits, how_categorised, review,
+      bank_account_id: null,
       isDuplicate, importAnyway: false,
       validationError: null,
     })

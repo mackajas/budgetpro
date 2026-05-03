@@ -37,9 +37,10 @@ export interface Transaction {
   how_categorised: HowCategorised | null
   review:          boolean
   notes:           string | null
-  import_batch_id: string | null
-  deleted:         boolean
-  imported_at:     string | null
+  import_batch_id:  string | null
+  bank_account_id:  string | null
+  deleted:          boolean
+  imported_at:      string | null
 }
 
 export interface EnvelopeAllocation {

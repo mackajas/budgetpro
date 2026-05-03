@@ -28,6 +28,7 @@ import { runImportPipeline }     from '../lib/importPipeline'
 import { useEnvelopeStore }      from '../stores/useEnvelopeStore'
 import { useSettingsStore }      from '../stores/useSettingsStore'
 import { useTransactionStore }   from '../stores/useTransactionStore'
+import { useBankAccountStore }   from '../stores/useBankAccountStore'
 import { useToast }              from '../contexts/ToastContext'
 import type { ProcessedRow, PipelineResult } from '../lib/importPipeline'
 import type { CategoryRule, EnvelopeAllocation } from '../types/database'
@@ -39,7 +40,8 @@ const MAX_ROWS       = 10_000
 
 const FORMAT_LABELS: Record<string, string> = {
   cba: 'Commonwealth Bank (CBA)', anz: 'ANZ', nab: 'NAB',
-  westpac: 'Westpac', ing: 'ING', bankwest: 'Bankwest', coles: 'Coles Credit Card',
+  westpac: 'Westpac', ing: 'ING', bankwest: 'Bankwest',
+  coles: 'Coles Credit Card (legacy)', 'coles-cc': 'Coles Credit Card',
 }
 
 // ── Stat pill ─────────────────────────────────────────────────────────────────
@@ -148,19 +150,22 @@ export function ImportModal({ onClose }: Props) {
   const { envelopes, fetch: fetchEnvelopes }       = useEnvelopeStore()
   const { settings,  fetch: fetchSettings }        = useSettingsStore()
   const { invalidate: invalidateTransactions }     = useTransactionStore()
+  const { accounts,  fetch: fetchAccounts }        = useBankAccountStore()
 
-  const [stage,       setStage]       = useState<Stage>('drop')
-  const [fileError,   setFileError]   = useState<string | null>(null)
-  const [parseResult, setParseResult] = useState<PipelineResult | null>(null)
-  const [rows,        setRows]        = useState<ProcessedRow[]>([])
-  const [doneResult,  setDoneResult]  = useState<DoneResult | null>(null)
-  const [parseError,  setParseError]  = useState<string | null>(null)
+  const [stage,           setStage]           = useState<Stage>('drop')
+  const [fileError,       setFileError]       = useState<string | null>(null)
+  const [parseResult,     setParseResult]     = useState<PipelineResult | null>(null)
+  const [rows,            setRows]            = useState<ProcessedRow[]>([])
+  const [doneResult,      setDoneResult]      = useState<DoneResult | null>(null)
+  const [parseError,      setParseError]      = useState<string | null>(null)
+  const [bankAccountId,   setBankAccountId]   = useState<string>('')
 
   // Ensure stores are loaded
   useEffect(() => {
     fetchEnvelopes()
     fetchSettings()
-  }, [fetchEnvelopes, fetchSettings])
+    fetchAccounts()
+  }, [fetchEnvelopes, fetchSettings, fetchAccounts])
 
   // ── Toggle "import anyway" for a duplicate row ───────────────────────────
   const toggleAnyway = useCallback((idx: number) => {
@@ -266,6 +271,8 @@ export function ImportModal({ onClose }: Props) {
       !r.validationError && (!r.isDuplicate || r.importAnyway),
     )
 
+    const accountId = bankAccountId || null
+
     const records = toInsert.map(r => ({
       date:            r.date,
       description:     r.description,
@@ -277,6 +284,7 @@ export function ImportModal({ onClose }: Props) {
       review:          r.review,
       notes:           null,
       import_batch_id: batchId,
+      bank_account_id: accountId,
       deleted:         false,
     }))
 
@@ -297,7 +305,7 @@ export function ImportModal({ onClose }: Props) {
       toast(e instanceof Error ? e.message : 'Import failed', 'error')
       setStage('preview')
     }
-  }, [parseResult, rows, invalidateTransactions, toast])
+  }, [parseResult, rows, bankAccountId, invalidateTransactions, toast])
 
   // ── Duplicates ready count (includes importAnyway overrides) ─────────────
   const anyDuplicates = parseResult && parseResult.counts.duplicates > 0
@@ -330,6 +338,22 @@ export function ImportModal({ onClose }: Props) {
         {/* ── Drop ───────────────────────────────────────────────────── */}
         {stage === 'drop' && (
           <>
+            {/* Bank account selector */}
+            <div className="mb-4">
+              <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--text-muted)' }}>
+                Import from account
+              </label>
+              <select
+                className="select text-sm w-full"
+                value={bankAccountId}
+                onChange={e => setBankAccountId(e.target.value)}
+              >
+                <option value="">— Select account (optional) —</option>
+                {accounts.map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
             <DropZone onFile={handleFile} error={fileError ?? parseError} />
           </>
         )}

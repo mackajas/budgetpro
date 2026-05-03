@@ -14,9 +14,11 @@ import { useState }            from 'react'
 import { X, Trash2, Plus, Minus } from 'lucide-react'
 import { useEnvelopeStore }    from '../stores/useEnvelopeStore'
 import { useTransactionStore } from '../stores/useTransactionStore'
+import { useBankAccountStore } from '../stores/useBankAccountStore'
 import { useToast }            from '../contexts/ToastContext'
 import { formatCurrency, formatDate, KIND_LABELS } from '../lib/formatters'
 import { round2 }              from '../lib/allocations'
+import { SourceBadge }         from './SourceBadge'
 import type { Transaction, TransactionKind, Envelope } from '../types/database'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -184,6 +186,7 @@ interface Props {
 export function EditTransactionModal({ transaction: tx, onClose }: Props) {
   const { envelopes }                  = useEnvelopeStore()
   const { update, softDelete }         = useTransactionStore()
+  const { accounts }                   = useBankAccountStore()
   const { toast }                      = useToast()
 
   const isPaycheque   = tx.kind === 'paycheque'
@@ -285,9 +288,16 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
                   <Row label="Kind"        value={KIND_LABELS[tx.kind] ?? tx.kind} />
                 </div>
                 <Row label="Description" value={tx.description} />
-                <p className="text-xs" style={{ color: 'var(--text-subtle)' }}>
-                  Date, amount, and description are locked for imported transactions.
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs" style={{ color: 'var(--text-subtle)' }}>
+                    Date, amount, and description are locked for imported transactions.
+                  </p>
+                  <SourceBadge
+                    bankAccountId={tx.bank_account_id}
+                    importBatchId={tx.import_batch_id}
+                    accounts={accounts}
+                  />
+                </div>
               </div>
             )}
 

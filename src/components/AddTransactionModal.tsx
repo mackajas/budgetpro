@@ -158,6 +158,7 @@ export function AddTransactionModal({ onClose }: Props) {
         review:          false,
         notes:           notes.trim() || null,
         import_batch_id: null,
+        bank_account_id: null,
         deleted:         false,
       })
 

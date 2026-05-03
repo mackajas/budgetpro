@@ -16,11 +16,13 @@ import { useSearchParams }        from 'react-router-dom'
 import { Plus, Upload, Search, X } from 'lucide-react'
 import { useTransactionStore }    from '../stores/useTransactionStore'
 import { useEnvelopeStore }       from '../stores/useEnvelopeStore'
+import { useBankAccountStore }    from '../stores/useBankAccountStore'
 import { EditTransactionModal }   from '../components/EditTransactionModal'
 import { AddTransactionModal }    from '../components/AddTransactionModal'
 import { ImportModal }            from '../components/ImportModal'
+import { SourceBadge }            from '../components/SourceBadge'
 import { formatCurrency, formatDate, KIND_LABELS } from '../lib/formatters'
-import type { Transaction, TransactionKind, Envelope } from '../types/database'
+import type { Transaction, TransactionKind, Envelope, BankAccount } from '../types/database'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -36,13 +38,13 @@ const KINDS: TransactionKind[] = [
 ]
 
 // Grid column template — must match the header row exactly
-// Columns: date(7rem) | description(1fr) | envelope(8rem) | badge(2rem) | amount(6rem)
-const TX_GRID = '7rem 1fr 8rem 2rem 6rem'
+// Columns: date(7rem) | description(1fr) | envelope(8rem) | source(4rem) | badge(2rem) | amount(6rem)
+const TX_GRID = '7rem 1fr 8rem 4rem 2rem 6rem'
 
 // ── Row ───────────────────────────────────────────────────────────────────────
 
-function TxRow({ tx, envelopes, onEdit }: {
-  tx: Transaction; envelopes: Envelope[]; onEdit: (t: Transaction) => void
+function TxRow({ tx, envelopes, accounts, onEdit }: {
+  tx: Transaction; envelopes: Envelope[]; accounts: BankAccount[]; onEdit: (t: Transaction) => void
 }) {
   const isIncome    = tx.amount > 0
   const amountColour = isIncome ? 'var(--success)' : 'var(--text-muted)'
@@ -71,6 +73,15 @@ function TxRow({ tx, envelopes, onEdit }: {
       {/* Envelope — hidden on mobile, visible sm+ */}
       <span className="truncate text-xs hidden sm:block" style={{ color: 'var(--text-muted)' }}>
         {envelopeName(tx.envelope_id, envelopes, tx.splits)}
+      </span>
+
+      {/* Source badge — fixed slot */}
+      <span className="flex items-center hidden sm:flex">
+        <SourceBadge
+          bankAccountId={tx.bank_account_id}
+          importBatchId={tx.import_batch_id}
+          accounts={accounts}
+        />
       </span>
 
       {/* Review badge — fixed slot, empty when not in review */}
@@ -173,6 +184,7 @@ export function TransactionsPage() {
     filters, setFilters, fetchPage, nextPage,
   } = useTransactionStore()
   const { envelopes, fetch: fetchEnvelopes } = useEnvelopeStore()
+  const { accounts, fetch: fetchAccounts }   = useBankAccountStore()
 
   const [editTx,      setEditTx]      = useState<Transaction | null>(null)
   const [addOpen,     setAddOpen]     = useState(false)
@@ -201,6 +213,7 @@ export function TransactionsPage() {
     if (ua) setUnassigned(true)
     if (ev) setEnvelopeId(ev)
     fetchEnvelopes()
+    void fetchAccounts()
     setFilters(initial)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -274,6 +287,7 @@ export function TransactionsPage() {
           <span className="section-label">Date</span>
           <span className="section-label">Description</span>
           <span className="section-label">Envelope</span>
+          <span className="section-label">Source</span>
           <span />  {/* review badge space */}
           <span className="text-right section-label">Amount</span>
         </div>
@@ -287,6 +301,7 @@ export function TransactionsPage() {
                 <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
                 <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
                 <span className="h-3 rounded hidden sm:block" style={{ background: 'var(--border)' }} />
+                <span className="hidden sm:block" />
                 <span />
                 <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
               </div>
@@ -298,7 +313,7 @@ export function TransactionsPage() {
         {!isLoading && transactions.length > 0 && (
           <>
             {transactions.map(tx => (
-              <TxRow key={tx.id} tx={tx} envelopes={envelopes} onEdit={setEditTx} />
+              <TxRow key={tx.id} tx={tx} envelopes={envelopes} accounts={accounts} onEdit={setEditTx} />
             ))}
           </>
         )}

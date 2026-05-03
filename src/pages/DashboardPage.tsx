@@ -16,14 +16,16 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate, Link }            from 'react-router-dom'
 import { Plus, Upload, AlertTriangle, FolderOpen, ChevronRight } from 'lucide-react'
-import { useTransactionStore } from '../stores/useTransactionStore'
-import { useEnvelopeStore }    from '../stores/useEnvelopeStore'
-import { useSettingsStore }    from '../stores/useSettingsStore'
-import { AddTransactionModal } from '../components/AddTransactionModal'
-import { ImportModal }         from '../components/ImportModal'
+import { useTransactionStore }  from '../stores/useTransactionStore'
+import { useEnvelopeStore }     from '../stores/useEnvelopeStore'
+import { useSettingsStore }     from '../stores/useSettingsStore'
+import { useBankAccountStore }  from '../stores/useBankAccountStore'
+import { AddTransactionModal }  from '../components/AddTransactionModal'
+import { ImportModal }          from '../components/ImportModal'
+import { SourceBadge }          from '../components/SourceBadge'
 import { computeBalances, computeDisplayBalances } from '../lib/balances'
 import { formatCurrency, formatDate }              from '../lib/formatters'
-import type { Envelope, Transaction } from '../types/database'
+import type { Envelope, Transaction, BankAccount } from '../types/database'
 
 // ── Balance helpers ───────────────────────────────────────────────────────────
 
@@ -181,10 +183,11 @@ function ParentCard({
 // ── Recent activity ───────────────────────────────────────────────────────────
 
 function RecentActivity({
-  transactions, envelopes,
+  transactions, envelopes, accounts,
 }: {
   transactions: Transaction[]
   envelopes:    Envelope[]
+  accounts:     BankAccount[]
 }) {
   const envMap = useMemo(
     () => new Map(envelopes.map(e => [e.id, e.name])),
@@ -224,16 +227,23 @@ function RecentActivity({
                 <p className="truncate text-sm" style={{ color: 'var(--text)' }}>
                   {tx.description}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-subtle)' }}>
+                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: 'var(--text-subtle)' }}>
                   {formatDate(tx.date)} · {envName}
                 </p>
               </div>
-              <span
-                className="shrink-0 text-sm tabular-nums font-medium"
-                style={{ color: isIncome ? 'var(--success)' : 'var(--text-muted)' }}
-              >
-                {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
-              </span>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span
+                  className="text-sm tabular-nums font-medium"
+                  style={{ color: isIncome ? 'var(--success)' : 'var(--text-muted)' }}
+                >
+                  {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
+                </span>
+                <SourceBadge
+                  bankAccountId={tx.bank_account_id}
+                  importBatchId={tx.import_batch_id}
+                  accounts={accounts}
+                />
+              </div>
             </div>
           )
         })
@@ -248,6 +258,7 @@ export function DashboardPage() {
   const { allTransactions, reviewCount, fetchAll, isLoading: txLoading } = useTransactionStore()
   const { envelopes, fetch: fetchEnvelopes, isLoading: envLoading }      = useEnvelopeStore()
   const { settings,  fetch: fetchSettings }                              = useSettingsStore()
+  const { accounts,  fetch: fetchAccounts }                              = useBankAccountStore()
 
   const [addOpen,    setAddOpen]    = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -256,7 +267,8 @@ export function DashboardPage() {
     void fetchAll()
     void fetchEnvelopes()
     void fetchSettings()
-  }, [fetchAll, fetchEnvelopes, fetchSettings])
+    void fetchAccounts()
+  }, [fetchAll, fetchEnvelopes, fetchSettings, fetchAccounts])
 
   // ── Balance maps ───────────────────────────────────────────────────────────
   const rawBalances     = useMemo(() => computeBalances(allTransactions), [allTransactions])
@@ -403,6 +415,7 @@ export function DashboardPage() {
             <RecentActivity
               transactions={allTransactions}
               envelopes={envelopes}
+              accounts={accounts}
             />
           </div>
         </div>
