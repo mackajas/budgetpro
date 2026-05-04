@@ -38,8 +38,8 @@ const KINDS: TransactionKind[] = [
 ]
 
 // Grid column template — must match the header row exactly
-// Columns: date(7rem) | description(1fr) | envelope(8rem) | source(4rem) | badge(2rem) | amount(6rem)
-const TX_GRID = '7rem 1fr 8rem 4rem 2rem 6rem'
+// Columns: date(7rem) | description(1fr) | envelope(8rem) | source(7rem) | badge(2rem) | amount(6rem)
+const TX_GRID = '7rem 1fr 8rem 7rem 2rem 6rem'
 
 // ── Row ───────────────────────────────────────────────────────────────────────
 

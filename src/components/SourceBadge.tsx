@@ -18,11 +18,12 @@ export function SourceBadge({ bankAccountId, importBatchId, accounts, className 
     const label = accounts.find(a => a.id === bankAccountId)?.name ?? '?'
     return (
       <span
-        className={`rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${className}`}
+        className={`rounded px-1.5 py-0.5 text-xs font-medium truncate max-w-full block ${className}`}
         style={{
           background: 'color-mix(in srgb, var(--pink) 12%, transparent)',
           color:      'var(--pink)',
         }}
+        title={label}
       >
         {label}
       </span>
