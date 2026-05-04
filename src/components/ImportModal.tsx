@@ -44,6 +44,18 @@ const FORMAT_LABELS: Record<string, string> = {
   coles: 'Coles Credit Card (legacy)', 'coles-cc': 'Coles Credit Card',
 }
 
+// Keywords to match against bank account names for auto-detection
+const FORMAT_KEYWORDS: Record<string, string[]> = {
+  'cba':      ['commonwealth', 'cba'],
+  'anz':      ['anz'],
+  'nab':      ['nab'],
+  'westpac':  ['westpac', 'wbc'],
+  'ing':      ['ing'],
+  'bankwest': ['bankwest', 'bwa'],
+  'coles-cc': ['coles', 'coles cc'],
+  'coles':    ['coles'],
+}
+
 // ── Stat pill ─────────────────────────────────────────────────────────────────
 
 function Stat({ label, value, colour }: { label: string; value: number; colour: string }) {
@@ -254,12 +266,22 @@ export function ImportModal({ onClose }: Props) {
 
       setParseResult(result)
       setRows(result.rows)
+
+      // Auto-detect bank account from format keywords (only if user hasn't already chosen one)
+      if (!bankAccountId) {
+        const keywords = FORMAT_KEYWORDS[result.format] ?? []
+        const match = accounts.find(a =>
+          keywords.some(kw => a.name.toLowerCase().includes(kw)),
+        )
+        if (match) setBankAccountId(match.id)
+      }
+
       setStage('preview')
     } catch (e) {
       setParseError(e instanceof Error ? e.message : 'Failed to parse file.')
       setStage('drop')
     }
-  }, [settings, envelopes])
+  }, [settings, envelopes, accounts, bankAccountId])
 
   // ── Confirm import ────────────────────────────────────────────────────────
   const handleImport = useCallback(async () => {
