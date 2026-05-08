@@ -46,62 +46,95 @@ const TX_GRID = '7rem 1fr 8rem 7rem 2rem 6rem'
 function TxRow({ tx, envelopes, accounts, onEdit }: {
   tx: Transaction; envelopes: Envelope[]; accounts: BankAccount[]; onEdit: (t: Transaction) => void
 }) {
-  const isIncome    = tx.amount > 0
+  const isIncome     = tx.amount > 0
   const amountColour = isIncome ? 'var(--success)' : 'var(--text-muted)'
-  const hasReview   = tx.review && !tx.envelope_id && !(tx.splits && Object.keys(tx.splits).length > 0)
+  const hasReview    = tx.review && !tx.envelope_id && !(tx.splits && Object.keys(tx.splits).length > 0)
+  const envName      = envelopeName(tx.envelope_id, envelopes, tx.splits)
+
+  const sharedProps = {
+    className: 'tx-row cursor-pointer select-none',
+    onClick: () => onEdit(tx),
+    role: 'button' as const,
+    tabIndex: 0,
+    onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter') onEdit(tx) },
+    'aria-label': `Edit transaction: ${tx.description}`,
+  }
 
   return (
-    <div
-      className="tx-row cursor-pointer select-none"
-      style={{ gridTemplateColumns: TX_GRID }}
-      onClick={() => onEdit(tx)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter') onEdit(tx) }}
-      aria-label={`Edit transaction: ${tx.description}`}
-    >
-      {/* Date */}
-      <span className="tabular-nums text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-        {formatDate(tx.date)}
-      </span>
+    <div {...sharedProps}>
 
-      {/* Description */}
-      <span className="min-w-0 truncate text-sm" style={{ color: 'var(--text)' }}>
-        {tx.description}
-      </span>
-
-      {/* Envelope — hidden on mobile, visible sm+ */}
-      <span className="truncate text-xs hidden sm:block" style={{ color: 'var(--text-muted)' }}>
-        {envelopeName(tx.envelope_id, envelopes, tx.splits)}
-      </span>
-
-      {/* Source badge — fixed slot */}
-      <span className="flex items-center hidden sm:flex">
-        <SourceBadge
-          bankAccountId={tx.bank_account_id}
-          importBatchId={tx.import_batch_id}
-          accounts={accounts}
-        />
-      </span>
-
-      {/* Review badge — fixed slot, empty when not in review */}
-      <span className="flex items-center">
-        {hasReview && (
-          <span className="rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
-            style={{
-              background: 'color-mix(in srgb, #f59e0b 15%, transparent)',
-              color: '#d97706',
-            }}>
-            Review
+      {/* ── Mobile layout (< sm) — matches Recent Activity style ─────────── */}
+      <div className="flex items-center gap-3 sm:hidden">
+        <div className="flex-1 min-w-0">
+          <p className="truncate text-sm font-medium" style={{ color: 'var(--text)' }}>
+            {tx.description}
+          </p>
+          <p className="text-xs mt-0.5 flex items-center gap-1 flex-wrap" style={{ color: 'var(--text-subtle)' }}>
+            <span>{formatDate(tx.date)}</span>
+            <span>·</span>
+            <span style={{ color: 'var(--text-muted)' }}>{envName}</span>
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className="text-sm font-medium tabular-nums" style={{ color: amountColour }}>
+            {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
           </span>
-        )}
-      </span>
+          <SourceBadge
+            bankAccountId={tx.bank_account_id}
+            importBatchId={tx.import_batch_id}
+            accounts={accounts}
+          />
+          {hasReview && (
+            <span className="rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+              style={{ background: 'color-mix(in srgb, #f59e0b 15%, transparent)', color: '#d97706' }}>
+              Review
+            </span>
+          )}
+        </div>
+      </div>
 
-      {/* Amount */}
-      <span className="text-right text-sm font-medium tabular-nums"
-        style={{ color: amountColour }}>
-        {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
-      </span>
+      {/* ── Desktop layout (sm+) — CSS grid with fixed columns ───────────── */}
+      <div className="hidden sm:grid items-center gap-3" style={{ gridTemplateColumns: TX_GRID }}>
+        {/* Date */}
+        <span className="tabular-nums text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+          {formatDate(tx.date)}
+        </span>
+
+        {/* Description */}
+        <span className="min-w-0 truncate text-sm" style={{ color: 'var(--text)' }}>
+          {tx.description}
+        </span>
+
+        {/* Envelope */}
+        <span className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>
+          {envName}
+        </span>
+
+        {/* Source badge */}
+        <span className="flex items-center">
+          <SourceBadge
+            bankAccountId={tx.bank_account_id}
+            importBatchId={tx.import_batch_id}
+            accounts={accounts}
+          />
+        </span>
+
+        {/* Review badge */}
+        <span className="flex items-center">
+          {hasReview && (
+            <span className="rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+              style={{ background: 'color-mix(in srgb, #f59e0b 15%, transparent)', color: '#d97706' }}>
+              Review
+            </span>
+          )}
+        </span>
+
+        {/* Amount */}
+        <span className="text-right text-sm font-medium tabular-nums" style={{ color: amountColour }}>
+          {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
+        </span>
+      </div>
+
     </div>
   )
 }
@@ -296,14 +329,24 @@ export function TransactionsPage() {
         {isLoading && (
           <div className="flex flex-col">
             {[...Array(5)].map((_, i) => (
-              <div key={`skeleton-${i}`} className="tx-row animate-pulse"
-                style={{ gridTemplateColumns: TX_GRID }}>
-                <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
-                <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
-                <span className="h-3 rounded hidden sm:block" style={{ background: 'var(--border)' }} />
-                <span className="hidden sm:block" />
-                <span />
-                <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
+              <div key={`skeleton-${i}`} className="tx-row animate-pulse">
+                {/* Mobile skeleton */}
+                <div className="flex items-center gap-3 sm:hidden">
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 rounded w-3/4" style={{ background: 'var(--border)' }} />
+                    <div className="h-2.5 rounded w-1/3" style={{ background: 'var(--border)' }} />
+                  </div>
+                  <div className="h-3 rounded w-16 shrink-0" style={{ background: 'var(--border)' }} />
+                </div>
+                {/* Desktop skeleton */}
+                <div className="hidden sm:grid items-center gap-3" style={{ gridTemplateColumns: TX_GRID }}>
+                  <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
+                  <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
+                  <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
+                  <span />
+                  <span />
+                  <span className="h-3 rounded" style={{ background: 'var(--border)' }} />
+                </div>
               </div>
             ))}
           </div>
