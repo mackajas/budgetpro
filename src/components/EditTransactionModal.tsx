@@ -28,6 +28,17 @@ function envelopeName(id: string | null, envelopes: Envelope[]): string {
   return envelopes.find(e => e.id === id)?.name ?? '—'
 }
 
+function buildEnvelopeGroups(envelopes: Envelope[]) {
+  const parentIdSet = new Set(envelopes.map(e => e.parent_id).filter(Boolean) as string[])
+  const parents = envelopes.filter(e => parentIdSet.has(e.id))
+  const orphans = envelopes.filter(e => !e.parent_id && !parentIdSet.has(e.id))
+  const groups  = parents.map(parent => ({
+    parent,
+    children: envelopes.filter(e => e.parent_id === parent.id),
+  }))
+  return { orphans, groups }
+}
+
 const EDITABLE_KINDS: TransactionKind[] = [
   'expense', 'cash-income', 'cash-income-split', 'income-other', 'ignored',
 ]
@@ -100,9 +111,7 @@ function SplitEditor({
   initial:      Record<string, number> | null
   onChange:     (splits: Record<string, number> | null) => void
 }) {
-  const leafEnvelopes = envelopes.filter(e =>
-    !envelopes.some(c => c.parent_id === e.id),    // no children → leaf
-  )
+  const { orphans, groups } = buildEnvelopeGroups(envelopes)
 
   const [lines, setLines] = useState<SplitLine[]>(() => {
     if (!initial || Object.keys(initial).length === 0)
@@ -137,8 +146,11 @@ function SplitEditor({
               onChange={e => update(lines.map((l, j) => j === i ? { ...l, envelopeId: e.target.value } : l))}
             >
               <option value="">Select envelope…</option>
-              {leafEnvelopes.map(e => (
-                <option key={e.id} value={e.id}>{e.name}</option>
+              {orphans.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {groups.map(({ parent, children }) => (
+                <optgroup key={parent.id} label={parent.name}>
+                  {children.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </optgroup>
               ))}
             </select>
             <div className="relative w-28">
@@ -189,10 +201,10 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
   const { accounts }                   = useBankAccountStore()
   const { toast }                      = useToast()
 
-  const isPaycheque   = tx.kind === 'paycheque'
-  const isOpeningBal  = tx.kind === 'opening-balance'
-  const isImported    = tx.import_batch_id !== null
-  const leafEnvelopes = envelopes.filter(e => !envelopes.some(c => c.parent_id === e.id))
+  const isPaycheque  = tx.kind === 'paycheque'
+  const isOpeningBal = tx.kind === 'opening-balance'
+  const isImported   = tx.import_batch_id !== null
+  const { orphans: mainOrphans, groups: mainGroups } = buildEnvelopeGroups(envelopes)
 
   const [kind,        setKind]        = useState<TransactionKind>(tx.kind)
   const [envelopeId,  setEnvelopeId]  = useState<string>(tx.envelope_id ?? '')
@@ -362,8 +374,11 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
                   <select className="select text-sm w-full" value={envelopeId}
                     onChange={e => setEnvelopeId(e.target.value)}>
                     <option value="">— Unassigned —</option>
-                    {leafEnvelopes.map(e => (
-                      <option key={e.id} value={e.id}>{e.name}</option>
+                    {mainOrphans.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                    {mainGroups.map(({ parent, children }) => (
+                      <optgroup key={parent.id} label={parent.name}>
+                        {children.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                      </optgroup>
                     ))}
                   </select>
                 )}
