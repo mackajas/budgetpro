@@ -85,10 +85,11 @@ export const FORMAT_SPECS: FormatSpec[] = [
   },
   // ── Bankwest ─────────────────────────────────────────────────────────────
   // Distinguisher: separate debit/credit columns AND 'narration' description column
+  // Real Bankwest exports use 'Transaction Date' (not 'Date') as the date column
   {
     format:          'bankwest',
     amountStructure: 'debit-credit',
-    dateCol:         'date',
+    dateCol:         'transaction date',
     descCol:         'narration',
     debitCol:        'debit',
     creditCol:       'credit',

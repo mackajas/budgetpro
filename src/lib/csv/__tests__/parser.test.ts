@@ -41,7 +41,7 @@ describe('detectBankFormat', () => {
   })
 
   it('T06 — detects Bankwest (separate Debit/Credit + Narration)', () => {
-    expect(detectBankFormat(['Date', 'Narration', 'Debit', 'Credit', 'Balance'])).toBe('bankwest')
+    expect(detectBankFormat(['Transaction Date', 'Narration', 'Debit', 'Credit', 'Balance'])).toBe('bankwest')
   })
 
   it('T07 — detects Coles Credit Card legacy (separate Debit/Credit + Description, no Balance)', () => {
@@ -76,7 +76,8 @@ describe('normaliseRow', () => {
   })
 
   it('T10 — normalises a Bankwest debit-credit row (debit = expense)', () => {
-    const row = { Date: '17/03/2024', Narration: 'COLES SUPERMARKETS', Debit: '45.20', Credit: '', Balance: '7365.30' }
+    // Real Bankwest exports use 'Transaction Date' (not 'Date')
+    const row = { 'Transaction Date': '17/03/2024', Narration: 'COLES SUPERMARKETS', Debit: '45.20', Credit: '', Balance: '7365.30' }
     const result = normaliseRow(row, 'bankwest')
     expect(result.date).toBe('2024-03-17')
     expect(result.amount).toBe(-45.20)
