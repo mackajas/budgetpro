@@ -18,6 +18,44 @@ import type { TransactionKind, Envelope } from '../types/database'
 
 type Tab = 'expense' | 'cash' | 'other'
 
+// ── Envelope grouping helpers ─────────────────────────────────────────────────
+
+function buildEnvelopeGroups(envelopes: Envelope[]) {
+  const parentIdSet = new Set(envelopes.map(e => e.parent_id).filter(Boolean) as string[])
+  const parents = envelopes.filter(e => parentIdSet.has(e.id))
+  const orphans = envelopes.filter(e => !e.parent_id && !parentIdSet.has(e.id))
+  const groups  = parents.map(parent => ({
+    parent,
+    children: envelopes.filter(e => e.parent_id === parent.id),
+  }))
+  return { orphans, groups }
+}
+
+/** Renders a grouped envelope <select> with parent <optgroup> headers. */
+function EnvelopeSelect({
+  envelopes, value, onChange, placeholder = '— Unassigned —', className = '',
+}: {
+  envelopes:   Envelope[]
+  value:       string
+  onChange:    (id: string) => void
+  placeholder?: string
+  className?:  string
+}) {
+  const { orphans, groups } = buildEnvelopeGroups(envelopes)
+  return (
+    <select className={`select text-sm w-full ${className}`} value={value}
+      onChange={e => onChange(e.target.value)}>
+      <option value="">{placeholder}</option>
+      {orphans.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+      {groups.map(({ parent, children }) => (
+        <optgroup key={parent.id} label={parent.name}>
+          {children.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+        </optgroup>
+      ))}
+    </select>
+  )
+}
+
 interface SplitLine { id: string; envelopeId: string; amount: string }
 
 function SplitLines({
@@ -38,11 +76,13 @@ function SplitLines({
       <div className="flex flex-col gap-2 mb-2">
         {lines.map((line, i) => (
           <div key={line.id} className="flex gap-2 items-center">
-            <select className="select flex-1 py-1.5 text-sm" value={line.envelopeId}
-              onChange={e => onChange(lines.map((l, j) => j === i ? { ...l, envelopeId: e.target.value } : l))}>
-              <option value="">Select envelope…</option>
-              {envelopes.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </select>
+            <EnvelopeSelect
+              envelopes={envelopes}
+              value={line.envelopeId}
+              placeholder="Select envelope…"
+              className="flex-1 py-1.5"
+              onChange={id => onChange(lines.map((l, j) => j === i ? { ...l, envelopeId: id } : l))}
+            />
             <div className="relative w-28">
               <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs"
                 style={{ color: 'var(--text-subtle)' }}>$</span>
@@ -84,6 +124,7 @@ export function AddTransactionModal({ onClose }: Props) {
   const { add }        = useTransactionStore()
   const { toast }      = useToast()
 
+  // Leaf envelopes only (children + standalones) — parents are rendered as optgroup headers
   const leafEnvelopes = envelopes.filter(e => !envelopes.some(c => c.parent_id === e.id))
 
   const [tab,         setTab]        = useState<Tab>('expense')
@@ -232,11 +273,7 @@ export function AddTransactionModal({ onClose }: Props) {
           {(tab === 'expense') && (
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Envelope</label>
-              <select className="select text-sm w-full" value={envelopeId}
-                onChange={e => setEnvelopeId(e.target.value)}>
-                <option value="">— Unassigned —</option>
-                {leafEnvelopes.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </select>
+              <EnvelopeSelect envelopes={leafEnvelopes} value={envelopeId} onChange={setEnvelopeId} />
             </div>
           )}
 
@@ -254,11 +291,7 @@ export function AddTransactionModal({ onClose }: Props) {
                 <SplitLines total={amountNum} envelopes={leafEnvelopes}
                   lines={splitLines} onChange={setSplitLines} />
               ) : (
-                <select className="select text-sm w-full" value={envelopeId}
-                  onChange={e => setEnvelopeId(e.target.value)}>
-                  <option value="">— Unassigned —</option>
-                  {leafEnvelopes.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </select>
+                <EnvelopeSelect envelopes={leafEnvelopes} value={envelopeId} onChange={setEnvelopeId} />
               )}
             </>
           )}
@@ -276,11 +309,7 @@ export function AddTransactionModal({ onClose }: Props) {
               {otherKind !== 'ignored' && (
                 <div>
                   <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Envelope</label>
-                  <select className="select text-sm w-full" value={envelopeId}
-                    onChange={e => setEnvelopeId(e.target.value)}>
-                    <option value="">— Unassigned —</option>
-                    {leafEnvelopes.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </select>
+                  <EnvelopeSelect envelopes={leafEnvelopes} value={envelopeId} onChange={setEnvelopeId} />
                 </div>
               )}
             </>
