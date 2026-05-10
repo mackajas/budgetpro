@@ -181,6 +181,32 @@ describe('detectDuplicate', () => {
       ),
     ).toBe(true)
   })
+
+  it('T12f — matches when existing has trailing state code the candidate lacks (pending→settled)', () => {
+    // Simulates: existing = settled export ("WOOLWORTHS 1234 SYDNEY VIC"),
+    // candidate = pending export ("WOOLWORTHS 1234 SYDNEY") — same real transaction
+    const withSuffix: Transaction[] = [{
+      ...existing[0],
+      description: 'WOOLWORTHS 1234 SYDNEY VIC',
+    }]
+    expect(
+      detectDuplicate(
+        { date: '2024-03-15', amount: -89.50, description: 'WOOLWORTHS 1234 SYDNEY' },
+        withSuffix,
+      ),
+    ).toBe(true)
+  })
+
+  it('T12g — matches when candidate has trailing country code the existing lacks (settled→pending)', () => {
+    // Simulates: existing = pending export ("WOOLWORTHS 1234 SYDNEY"),
+    // candidate = settled export ("WOOLWORTHS 1234 SYDNEY AUS") — same real transaction
+    expect(
+      detectDuplicate(
+        { date: '2024-03-15', amount: -89.50, description: 'WOOLWORTHS 1234 SYDNEY AUS' },
+        existing,
+      ),
+    ).toBe(true)
+  })
 })
 
 // ── T13: detectPaycheque ──────────────────────────────────────────────────────
