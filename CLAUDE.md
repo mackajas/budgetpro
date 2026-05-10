@@ -135,10 +135,67 @@ npx vitest run src/test/integration/addTransaction.test.tsx
 
 ---
 
+## Git workflow
+
+All changes ship through feature branches and pull requests — never directly to `main`.
+
+### Starting a new task
+
+```bash
+# 1. Make sure main is up to date
+git checkout main && git pull
+
+# 2. Create a feature branch
+#    Naming convention:
+#      feature/<short-description>   — new functionality
+#      fix/<short-description>       — bug fix
+#      chore/<short-description>     — refactoring, docs, deps
+git checkout -b feature/import-bank-detection
+```
+
+### During development
+
+```bash
+# Commit incrementally with meaningful messages
+git add src/lib/csv/detect.ts src/lib/csv/__tests__/parser.test.ts
+git commit -m "fix: detect Bankwest 'Transaction Date' header correctly"
+
+# Run tests and lint before pushing
+npm test
+npm run lint
+```
+
+### Opening a pull request
+
+```bash
+# Push the branch and open a PR in one step
+git push -u origin feature/import-bank-detection
+gh pr create --title "Fix Bankwest CSV date column detection" \
+  --body "Bankwest exports use 'Transaction Date' not 'Date'. Updates format spec and tests."
+```
+
+`gh pr create` prints the PR URL when it completes — **always return this URL to the user** so they can open it directly.
+
+Vercel automatically builds a **preview deployment** for every PR — use the preview URL to smoke-test on iOS before merging.
+
+### Merging
+
+1. Review the Vercel preview URL.
+2. Confirm all GitHub CI checks are green.
+3. Merge the PR on GitHub (squash merge is fine).
+4. Delete the branch on GitHub after merging.
+5. Pull `main` locally to stay current:
+
+```bash
+git checkout main && git pull
+```
+
+---
+
 ## Always do
 
-- **Create a feature branch** before making any changes.
-- **Run `npm test` after every change** before considering work done. All 69 tests must pass.
+- **Start every task on a feature branch** (see Git workflow above).
+- **Run `npm test` after every change** before considering work done. All tests must pass.
 - **Run `npm run lint`** before committing. Fix all errors (warnings are acceptable).
 - **Use `formatCurrency()`** for any monetary display value in the UI.
 - **Wrap form saves in `withSave()`** from `SaveContext` so the sidebar spinner activates.
@@ -148,7 +205,7 @@ npx vitest run src/test/integration/addTransaction.test.tsx
 
 ## Never do
 
-- **Never commit directly to `main`.**
+- **Never commit directly to `main`** — always use a feature branch and PR.
 - **Never skip tests** when adding a new feature or fixing a bug.
 - **Never use public npm registry** — always use the Nexus proxy.
 - **Never use Supabase session management** (`signIn`, `signOut`, `onAuthStateChange`). Auth is handled entirely by `useAuthStore` + the `/auth` Edge Function.

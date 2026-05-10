@@ -23,11 +23,6 @@ import type { Transaction, TransactionKind, Envelope } from '../types/database'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function envelopeName(id: string | null, envelopes: Envelope[]): string {
-  if (!id) return '—'
-  return envelopes.find(e => e.id === id)?.name ?? '—'
-}
-
 function buildEnvelopeGroups(envelopes: Envelope[]) {
   const parentIdSet = new Set(envelopes.map(e => e.parent_id).filter(Boolean) as string[])
   const parents = envelopes.filter(e => parentIdSet.has(e.id))
@@ -37,6 +32,34 @@ function buildEnvelopeGroups(envelopes: Envelope[]) {
     children: envelopes.filter(e => e.parent_id === parent.id),
   }))
   return { orphans, groups }
+}
+
+interface SplitGroup {
+  parent: Envelope | null
+  rows:   Array<{ envelope: Envelope; amount: number }>
+}
+
+function groupSplitsByParent(
+  splits:    Record<string, number>,
+  envelopes: Envelope[],
+): SplitGroup[] {
+  const byParent = new Map<string, SplitGroup>()
+
+  for (const [envId, amt] of Object.entries(splits)) {
+    const env = envelopes.find(e => e.id === envId)
+    if (!env) continue
+    const parentId = env.parent_id ?? null
+    const parent   = parentId ? (envelopes.find(e => e.id === parentId) ?? null) : null
+    const key      = parentId ?? `__orphan__${envId}`
+
+    if (!byParent.has(key)) byParent.set(key, { parent, rows: [] })
+    byParent.get(key)!.rows.push({ envelope: env, amount: amt })
+  }
+
+  // Grouped (has parent) before standalones
+  return [...byParent.values()].sort((a, b) =>
+    a.parent && !b.parent ? -1 : !a.parent && b.parent ? 1 : 0,
+  )
 }
 
 const EDITABLE_KINDS: TransactionKind[] = [
@@ -64,16 +87,28 @@ function PaychequeView({
             </p>
             <div className="rounded-lg border overflow-hidden"
               style={{ borderColor: 'var(--border)' }}>
-              {Object.entries(splits).map(([envId, amt]) => (
-                <div key={envId}
-                  className="flex justify-between items-center border-b px-3 py-2 text-sm last:border-b-0"
-                  style={{ borderColor: 'var(--border)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>
-                    {envelopeName(envId, envelopes)}
-                  </span>
-                  <span className="tabular-nums" style={{ color: 'var(--text)' }}>
-                    {formatCurrency(amt)}
-                  </span>
+              {groupSplitsByParent(splits, envelopes).map((group, gi) => (
+                <div key={gi}>
+                  {group.parent && (
+                    <div
+                      className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
+                      style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+                    >
+                      {group.parent.name}
+                    </div>
+                  )}
+                  {group.rows.map(({ envelope, amount }) => (
+                    <div key={envelope.id}
+                      className="flex justify-between items-center border-b px-3 py-2 text-sm last:border-b-0"
+                      style={{ borderColor: 'var(--border)' }}>
+                      <span style={{ color: 'var(--text-muted)', paddingLeft: group.parent ? '0.75rem' : 0 }}>
+                        {envelope.name}
+                      </span>
+                      <span className="tabular-nums" style={{ color: 'var(--text)' }}>
+                        {formatCurrency(amount)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
