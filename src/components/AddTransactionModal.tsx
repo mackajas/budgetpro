@@ -124,8 +124,6 @@ export function AddTransactionModal({ onClose }: Props) {
   const { add }        = useTransactionStore()
   const { toast }      = useToast()
 
-  // Leaf envelopes only (children + standalones) — parents are rendered as optgroup headers
-  const leafEnvelopes = envelopes.filter(e => !envelopes.some(c => c.parent_id === e.id))
 
   const [tab,         setTab]        = useState<Tab>('expense')
   const [date,        setDate]        = useState(today())
@@ -273,7 +271,7 @@ export function AddTransactionModal({ onClose }: Props) {
           {(tab === 'expense') && (
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Envelope</label>
-              <EnvelopeSelect envelopes={leafEnvelopes} value={envelopeId} onChange={setEnvelopeId} />
+              <EnvelopeSelect envelopes={envelopes} value={envelopeId} onChange={setEnvelopeId} />
             </div>
           )}
 
@@ -288,10 +286,10 @@ export function AddTransactionModal({ onClose }: Props) {
                 </label>
               </div>
               {splitMode ? (
-                <SplitLines total={amountNum} envelopes={leafEnvelopes}
+                <SplitLines total={amountNum} envelopes={envelopes}
                   lines={splitLines} onChange={setSplitLines} />
               ) : (
-                <EnvelopeSelect envelopes={leafEnvelopes} value={envelopeId} onChange={setEnvelopeId} />
+                <EnvelopeSelect envelopes={envelopes} value={envelopeId} onChange={setEnvelopeId} />
               )}
             </>
           )}
@@ -309,7 +307,7 @@ export function AddTransactionModal({ onClose }: Props) {
               {otherKind !== 'ignored' && (
                 <div>
                   <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Envelope</label>
-                  <EnvelopeSelect envelopes={leafEnvelopes} value={envelopeId} onChange={setEnvelopeId} />
+                  <EnvelopeSelect envelopes={envelopes} value={envelopeId} onChange={setEnvelopeId} />
                 </div>
               )}
             </>
