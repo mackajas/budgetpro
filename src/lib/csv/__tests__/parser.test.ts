@@ -15,6 +15,7 @@ import { normaliseRow, parseDate } from '../normalise'
 import { validateRow }          from '../validate'
 import { detectDuplicate }      from '../duplicate'
 import { detectPaycheque }      from '../paycheque'
+import { ensureHeaders }        from '../../importPipeline'
 import type { Transaction }     from '../../../types/database'
 
 // ── T01–T07: detectBankFormat ─────────────────────────────────────────────────
@@ -262,5 +263,40 @@ describe('detectPaycheque', () => {
       employer_2_pay_2_keyword: null,
     })
     expect(result.matched).toBe(false)
+  })
+})
+
+// ── T14: ensureHeaders ────────────────────────────────────────────────────────
+
+describe('ensureHeaders', () => {
+  it('T14a — leaves CSV with headers unchanged', () => {
+    const csv = 'Date,Amount,Description\n7/5/2026,-98.06,COLES DEER PARK'
+    expect(ensureHeaders(csv)).toBe(csv)
+  })
+
+  it('T14b — prepends 3-column header when first field is a date (D/M/YYYY)', () => {
+    const csv    = '7/5/2026,-98.06,COLES DEER PARK VIC\n7/5/2026,-12.50,COLES CAIRNLEA VIC'
+    const result = ensureHeaders(csv)
+    const firstLine = result.split('\n')[0]
+    expect(firstLine).toBe('Date,Amount,Description')
+    // Original data rows preserved
+    expect(result.split('\n').slice(1).join('\n')).toBe(csv)
+  })
+
+  it('T14c — prepends 4-column header when row has 4 fields (Date,Amount,Description,Balance)', () => {
+    const csv    = '07/05/2026,-98.06,COLES DEER PARK,1234.56'
+    const result = ensureHeaders(csv)
+    expect(result.split('\n')[0]).toBe('Date,Amount,Description,Balance')
+  })
+
+  it('T14d — handles DD/MM/YYYY (zero-padded) date in first field', () => {
+    const csv    = '07/05/2026,-98.06,COLES DEER PARK VIC'
+    const result = ensureHeaders(csv)
+    expect(result.split('\n')[0]).toBe('Date,Amount,Description')
+  })
+
+  it('T14e — does not modify CSV whose first field is not a date', () => {
+    const csv = 'Transaction Date,Narration,Debit,Credit,Balance\n07/05/2026,COLES,-98.06,,1234.56'
+    expect(ensureHeaders(csv)).toBe(csv)
   })
 })
