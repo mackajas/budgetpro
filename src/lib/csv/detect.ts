@@ -37,8 +37,11 @@ export function detectBankFormat(rawHeaders: string[]): BankFormat {
   // Westpac: uses 'narration' for description
   if (has('narration')) return 'westpac'
 
-  // ING: has 'description' and 'amount' but no 'balance' column
-  if (has('description') && has('amount') && !has('balance')) return 'ing'
+  // ING: has 'description' and 'amount' but no 'balance' column,
+  // AND description appears BEFORE amount (CBA is the reverse: amount before description)
+  const descIdx = h.indexOf('description')
+  const amtIdx  = h.indexOf('amount')
+  if (descIdx !== -1 && amtIdx !== -1 && !has('balance') && descIdx < amtIdx) return 'ing'
 
   // Coles Credit Card (actual export): single amount + 'transaction details' description
   if (has('transaction details')) return 'coles-cc'
