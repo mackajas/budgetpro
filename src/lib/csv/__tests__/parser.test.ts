@@ -37,8 +37,14 @@ describe('detectBankFormat', () => {
     expect(detectBankFormat(['Date', 'Narration', 'Amount', 'Balance'])).toBe('westpac')
   })
 
-  it('T05 — detects ING (description + amount, no balance)', () => {
+  it('T05 — detects ING (description BEFORE amount, no balance)', () => {
     expect(detectBankFormat(['Date', 'Description', 'Amount'])).toBe('ing')
+  })
+
+  it('T05b — does NOT detect CBA headerless headers as ING (amount before description)', () => {
+    // ensureHeaders() prepends 'Date,Amount,Description' for headerless CBA files.
+    // Amount appears before Description, so this must NOT match ING.
+    expect(detectBankFormat(['Date', 'Amount', 'Description'])).toBe('cba')
   })
 
   it('T06 — detects Bankwest (separate Debit/Credit + Narration)', () => {
