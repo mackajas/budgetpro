@@ -329,10 +329,9 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
             {isImported && (
               <div className="flex flex-col gap-3 mb-4 rounded-lg p-3"
                 style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                <div className="grid grid-cols-3 gap-3">
-                  <Row label="Date"        value={formatDate(tx.date)} />
-                  <Row label="Amount"      value={formatCurrency(tx.amount)} />
-                  <Row label="Kind"        value={KIND_LABELS[tx.kind] ?? tx.kind} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Row label="Date"   value={formatDate(tx.date)} />
+                  <Row label="Amount" value={formatCurrency(tx.amount)} />
                 </div>
                 <Row label="Description" value={tx.description} />
                 <div className="flex items-center justify-between">
@@ -371,15 +370,19 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
                     value={draftDesc}
                     onChange={e => setDraftDesc(e.target.value)} />
                 </div>
-                <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Kind</label>
-                  <select className="select text-sm" value={kind}
-                    onChange={e => setKind(e.target.value as TransactionKind)}>
-                    {EDITABLE_KINDS.map(k => (
-                      <option key={k} value={k}>{KIND_LABELS[k]}</option>
-                    ))}
-                  </select>
-                </div>
+              </div>
+            )}
+
+            {/* Kind — always editable for all non-paycheque, non-opening-balance transactions */}
+            {!isOpeningBal && (
+              <div className="mb-4">
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Kind</label>
+                <select className="select text-sm w-full" value={kind}
+                  onChange={e => setKind(e.target.value as TransactionKind)}>
+                  {EDITABLE_KINDS.map(k => (
+                    <option key={k} value={k}>{KIND_LABELS[k]}</option>
+                  ))}
+                </select>
               </div>
             )}
 
