@@ -85,7 +85,10 @@ export const useTransactionStore = create<TransactionState & TransactionActions>
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (filters.envelopeId) q = q.eq('envelope_id', filters.envelopeId)
+    // Ignored transactions are hidden by default; selecting "Ignored" in the
+    // kind filter shows only ignored rows; any other kind filter excludes them naturally.
     if (filters.kind)       q = q.eq('kind', filters.kind)
+    else                    q = q.neq('kind', 'ignored')
     if (filters.dateFrom)   q = q.gte('date', filters.dateFrom)
     if (filters.dateTo)     q = q.lte('date', filters.dateTo)
     if (filters.unassigned) q = q.is('envelope_id', null)
