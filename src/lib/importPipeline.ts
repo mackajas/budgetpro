@@ -104,6 +104,32 @@ function stripBom(text: string): string {
   return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
 }
 
+// ── Headerless CBA detection ──────────────────────────────────────────────────
+
+/**
+ * Some CBA exports omit the header row entirely (columns are always
+ * Date, Amount, Description[, Balance] in that order).
+ *
+ * If the first field of the first line looks like a date (D/M/YYYY or
+ * DD/MM/YYYY) rather than a column name, prepend synthetic CBA headers
+ * so PapaParse can map columns correctly.
+ */
+const DATE_LIKE = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/
+
+export function ensureHeaders(content: string): string {
+  const firstLine  = content.split('\n')[0].trim()
+  const firstField = firstLine.split(',')[0].trim()
+  if (!DATE_LIKE.test(firstField)) return content   // already has headers
+
+  // Count columns to decide whether a Balance column is present
+  const colCount = firstLine.split(',').length
+  const header   = colCount >= 4
+    ? 'Date,Amount,Description,Balance'
+    : 'Date,Amount,Description'
+
+  return header + '\n' + content
+}
+
 // ── Main pipeline ─────────────────────────────────────────────────────────────
 
 export async function runImportPipeline(params: {
@@ -116,9 +142,9 @@ export async function runImportPipeline(params: {
 }): Promise<PipelineResult> {
   const { file, settings, envelopes, allocations, rules, existing } = params
 
-  // Read file text with BOM stripping
+  // Read file text — strip BOM, then auto-add headers if missing
   const raw     = await file.text()
-  const content = stripBom(raw)
+  const content = ensureHeaders(stripBom(raw))
 
   // Parse CSV
   const parsed = Papa.parse<Record<string, string>>(content, {
