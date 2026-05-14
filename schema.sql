@@ -23,7 +23,7 @@ create table if not exists transactions (
   amount          numeric(12,2) not null,
   kind            text not null check (kind in (
                     'paycheque','expense','cash-income','cash-income-split',
-                    'income-other','opening-balance','ignored'
+                    'income-other','opening-balance','ignored','move-money'
                   )),
   envelope_id     uuid references envelopes(id) on delete set null,
   splits          jsonb,

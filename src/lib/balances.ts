@@ -27,9 +27,21 @@ export function computeBalances(
     if (tx.deleted)            continue
     if (tx.kind === 'ignored') continue
 
+    if (tx.kind === 'move-money') {
+      // Debit source envelope (amount is stored as negative)
+      if (tx.envelope_id) {
+        balances[tx.envelope_id] = (balances[tx.envelope_id] ?? 0) + tx.amount
+      }
+      // Credit destination(s) stored in splits
+      for (const [envId, amt] of Object.entries(tx.splits ?? {})) {
+        balances[envId] = (balances[envId] ?? 0) + (amt as number)
+      }
+      continue
+    }
+
     const splits = tx.splits
     if (splits && Object.keys(splits).length > 0) {
-      // Paycheque / cash-income-split: distribute via splits map
+      // Paycheque / cash-income-split / expense split: distribute via splits map
       for (const [envId, amt] of Object.entries(splits)) {
         balances[envId] = (balances[envId] ?? 0) + (amt as number)
       }
