@@ -1,5 +1,5 @@
 /**
- * Allocation Calculator — unit tests (8 total, per BRD §16.3 Step 7)
+ * Allocation Calculator — unit tests (12 total, per BRD §16.3 Step 7)
  *
  * T01  Fixed allocation for a standalone envelope
  * T02  Percentage allocation for a standalone envelope (% of gross)
@@ -9,6 +9,10 @@
  * T06  Allocations that sum to exactly gross → remainder = 0
  * T07  Rounding to 2 decimal places (fractional-cent percentages)
  * T08  Over-allocation (total splits > gross) → negative remainder
+ * T09  Pro-rata: fixed allocation split proportionally across two components
+ * T10  Pro-rata: equal component sizes → each receives exactly half
+ * T11  Pro-rata: percentage allocations unaffected by totalGross
+ * T12  Pro-rata: child fixed allocations also scale pro-rata
  */
 
 import { describe, it, expect } from 'vitest'
@@ -214,5 +218,87 @@ describe('T08 — over-allocation (total splits > gross) → negative remainder'
 
     expect(result.allocated).toBe(6000)
     expect(result.remainder).toBe(-1000)
+  })
+})
+
+// ── T09: Pro-rata — unequal components ───────────────────────────────────────
+
+describe('T09 — pro-rata: fixed allocation split proportionally across two components', () => {
+  it('scales fixed amounts by component/total so both components sum to the full allocation', () => {
+    // Employer 2: component 1 = $700, component 2 = $689.54, total = $1389.54
+    // Kids fixed $130 → component 1 gets $130 × (700/1389.54) ≈ $65.52
+    //                 → component 2 gets $130 × (689.54/1389.54) ≈ $64.48
+    const totalGross = 1389.54
+    const comp1Gross = 700
+    const comp2Gross = 689.54
+
+    const envelopes   = [env('kids')]
+    const allocations = [alloc('kids', 'fixed', 130, 2)]
+
+    const result1 = buildPaychequeSplit(envelopes, allocations, comp1Gross, 2, totalGross)
+    const result2 = buildPaychequeSplit(envelopes, allocations, comp2Gross, 2, totalGross)
+
+    expect(result1.splits['kids']).toBe(round2(130 * (comp1Gross / totalGross)))
+    expect(result2.splits['kids']).toBe(round2(130 * (comp2Gross / totalGross)))
+    expect(round2(result1.splits['kids'] + result2.splits['kids'])).toBe(130)
+  })
+})
+
+// ── T10: Pro-rata — equal components ─────────────────────────────────────────
+
+describe('T10 — pro-rata: equal component sizes → each receives exactly half', () => {
+  it('gives each component exactly half of a fixed allocation when both components are equal', () => {
+    // total = $1000, component 1 = $500, component 2 = $500
+    // fixed $130 → each gets $65
+    const envelopes   = [env('kids')]
+    const allocations = [alloc('kids', 'fixed', 130, 2)]
+
+    const result1 = buildPaychequeSplit(envelopes, allocations, 500, 2, 1000)
+    const result2 = buildPaychequeSplit(envelopes, allocations, 500, 2, 1000)
+
+    expect(result1.splits['kids']).toBe(65)
+    expect(result2.splits['kids']).toBe(65)
+  })
+})
+
+// ── T11: Pro-rata — percentages unaffected ────────────────────────────────────
+
+describe('T11 — pro-rata: percentage allocations are unaffected by totalGross', () => {
+  it('computes percentage of component gross regardless of totalGross', () => {
+    // 25% of component 1 ($700) should be $175 — totalGross does not change this
+    const envelopes   = [env('giving')]
+    const allocations = [alloc('giving', 'percentage', 25, 2)]
+
+    const result = buildPaychequeSplit(envelopes, allocations, 700, 2, 1389.54)
+
+    expect(result.splits['giving']).toBe(175)
+  })
+})
+
+// ── T12: Pro-rata — child fixed allocations ───────────────────────────────────
+
+describe('T12 — pro-rata: child fixed allocations also scale pro-rata', () => {
+  it('applies scaleFactor to child fixed amounts as well as parent fixed amounts', () => {
+    // total = $1389.54, component 1 = $700
+    // Parent "kids" fixed $130 → scaled to $130 × (700/1389.54) ≈ $65.52
+    // Child "school" fixed $80 → scaled to $80 × (700/1389.54) ≈ $40.32
+    const totalGross = 1389.54
+    const compGross  = 700
+    const scaleFactor = compGross / totalGross
+
+    const envelopes = [
+      env('kids'),
+      env('school', 'kids'),
+    ]
+    const allocations = [
+      alloc('kids',   'fixed', 130, 2),
+      alloc('school', 'fixed',  80, 2),
+    ]
+
+    const result = buildPaychequeSplit(envelopes, allocations, compGross, 2, totalGross)
+
+    // kids has a child so it doesn't appear in splits itself
+    expect(result.splits['kids']).toBeUndefined()
+    expect(result.splits['school']).toBe(round2(80 * scaleFactor))
   })
 })
