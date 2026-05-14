@@ -1,0 +1,239 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens ───────────────────────────────────────────────────────── */
+:root {
+  /* Light mode (default) */
+  --bg:           #F3F4F6;
+  --surface:      #FFFFFF;
+  --surface-2:    #F9FAFB;
+  --border:       #E5E7EB;
+  --border-2:     #D1D5DB;
+  --text:         #111827;
+  --text-muted:   #6B7280;
+  --text-subtle:  #9CA3AF;
+  --pink:         #FF037C;
+  --success:      #34D399;
+  --danger:       #F87171;
+  --warning:      #FBBF24;
+  --sidebar-w:    240px;
+}
+
+html.dark {
+  --bg:           #080808;
+  --surface:      #111111;
+  --surface-2:    #18181b;
+  --border:       #27272a;
+  --border-2:     #3f3f46;
+  --text:         #F9FAFB;
+  --text-muted:   #A1A1AA;
+  --text-subtle:  #71717A;
+}
+
+/* ── Base resets ─────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  background-color: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Shared component layer ──────────────────────────────────────────────── */
+@layer components {
+
+  /* Cards */
+  .card {
+    @apply rounded-lg border;
+    background-color: var(--surface);
+    border-color: var(--border);
+  }
+
+  /* Section headings (uppercase tracked) */
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-widest;
+    color: var(--text-subtle);
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white transition-opacity;
+    background-color: var(--pink);
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    background: transparent;
+  }
+  .btn-ghost:hover {
+    color: var(--text);
+    border-color: var(--border-2);
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white transition-opacity;
+    background-color: var(--danger);
+  }
+  .btn-danger:hover { opacity: 0.88; }
+
+  /* Text input */
+  .input {
+    @apply w-full rounded-md px-3 py-2 text-sm outline-none transition-colors;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .input:focus {
+    border-color: var(--pink);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--pink) 20%, transparent);
+  }
+  .input::placeholder { color: var(--text-subtle); }
+
+  /* Select */
+  .select {
+    @apply input appearance-none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+
+  /* List rows — flex (used by Dashboard envelope rows, etc.)
+     NOTE: intentionally NOT named "table-row" — that collides with
+     Tailwind's built-in table-row utility (display: table-row) which
+     overrides display: flex via the utilities layer cascade. */
+  .list-row {
+    @apply flex items-center gap-3 border-b px-4 py-3 text-sm;
+    border-color: var(--border);
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background-color: var(--surface-2); }
+
+  /* Transaction table rows — base styles only (layout applied in component) */
+  .tx-row {
+    @apply border-b px-4 py-3 text-sm;
+    border-color: var(--border);
+  }
+  .tx-row:last-child { border-bottom: none; }
+  .tx-row:hover { background-color: var(--surface-2); }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+  .badge-danger {
+    @apply badge;
+    background-color: color-mix(in srgb, var(--danger) 15%, transparent);
+    color: var(--danger);
+  }
+  .badge-warning {
+    @apply badge;
+    background-color: color-mix(in srgb, var(--warning) 15%, transparent);
+    color: var(--warning);
+  }
+  .badge-success {
+    @apply badge;
+    background-color: color-mix(in srgb, var(--success) 15%, transparent);
+    color: var(--success);
+  }
+
+  /* Page header */
+  .page-header {
+    @apply mb-6 flex items-center justify-between;
+  }
+  .page-title {
+    @apply text-xl font-semibold;
+    color: var(--text);
+  }
+
+  /* Child envelope pink rule */
+  .child-envelope-rule {
+    @apply absolute left-0 top-0 h-full w-0.5 rounded-full;
+    background-color: var(--pink);
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4;
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+  .modal {
+    @apply card w-full max-w-lg rounded-t-xl sm:rounded-xl p-5 sm:p-6 shadow-xl max-h-[90dvh] overflow-y-auto;
+  }
+
+  /* Sidebar nav link */
+  .nav-link {
+    @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors;
+    color: var(--text-muted);
+  }
+  .nav-link:hover {
+    color: var(--text);
+    background-color: var(--surface-2);
+  }
+  .nav-link.active {
+    color: var(--text);
+    background-color: var(--surface-2);
+  }
+  .nav-link.active .nav-icon { color: var(--pink); }
+
+  /* Toast */
+  .toast {
+    @apply pointer-events-auto flex items-start gap-3 rounded-lg border p-4 shadow-lg text-sm;
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+    min-width: 280px;
+    max-width: 380px;
+  }
+
+  /* Spinner */
+  .spinner {
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent;
+  }
+
+  /* Empty state */
+  .empty-state {
+    @apply flex flex-col items-center justify-center gap-3 py-16 text-center;
+    color: var(--text-muted);
+  }
+  .empty-state-icon {
+    @apply h-10 w-10 opacity-40;
+  }
+  .empty-state-title {
+    @apply text-sm font-medium;
+    color: var(--text);
+  }
+  .empty-state-body {
+    @apply text-sm;
+    color: var(--text-muted);
+  }
+
+  /* Overdrawn badge */
+  .badge-overdrawn {
+    @apply badge;
+    background-color: color-mix(in srgb, #F87171 15%, transparent);
+    color: #F87171;
+  }
+
+  /* Amount colours */
+  .amount-income { color: var(--success); }
+  .amount-expense { color: var(--text-muted); }
+  .amount-negative { color: var(--danger); }
+}
