@@ -78,6 +78,11 @@ export const handlers = [
     HttpResponse.json([]),
   ),
 
+  // RPC: envelope-filtered transaction query (includes split rows)
+  http.post(`${SUPABASE_URL}/rest/v1/rpc/transactions_for_envelope`, () =>
+    HttpResponse.json([]),
+  ),
+
   // Transactions — insert (returns created row)
   http.post(`${SUPABASE_URL}/rest/v1/transactions`, async ({ request }) => {
     const body = await request.json() as Record<string, unknown>
