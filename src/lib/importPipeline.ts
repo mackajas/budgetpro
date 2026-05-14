@@ -241,9 +241,16 @@ export async function runImportPipeline(params: {
       // Regular transaction: auto-categorise via rules
       const rule = autoCategorise(description, rules)
       if (rule) {
-        envelope_id     = rule.envelope_id
-        how_categorised = 'auto'
-        review          = false
+        if (rule.envelope_id === null) {
+          // Ignore rule — mark transaction as ignored, no envelope assignment
+          kind            = 'ignored'
+          how_categorised = 'auto'
+          review          = false
+        } else {
+          envelope_id     = rule.envelope_id
+          how_categorised = 'auto'
+          review          = false
+        }
       } else {
         how_categorised = 'review'
         review          = true
