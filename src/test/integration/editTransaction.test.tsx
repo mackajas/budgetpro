@@ -98,8 +98,8 @@ describe('Flow 4 — Edit transaction: CSV-imported row', () => {
       <EditTransactionModal transaction={CSV_TX} onClose={onClose} />,
     )
 
-    // Find envelope combobox (not split toggle, just the envelope select)
-    const envelopeSelect = screen.getAllByRole('combobox')[0]
+    // Find envelope combobox — index 1 because index 0 is the kind dropdown
+    const envelopeSelect = screen.getAllByRole('combobox')[1]
     await user.selectOptions(envelopeSelect, 'env-groceries')
 
     await user.click(screen.getByRole('button', { name: /save/i }))
@@ -165,7 +165,7 @@ describe('Flow 5 — Edit transaction: Paycheque read-only view', () => {
     expect(screen.getByText('$3,700.00')).toBeInTheDocument()
   })
 
-  it('has only a Close button, no Save or Delete', () => {
+  it('has only a Close button, no Save — but does have a Delete option', () => {
     renderWithProviders(
       <EditTransactionModal transaction={PAYCHEQUE_TX} onClose={() => {}} />,
     )
@@ -175,8 +175,8 @@ describe('Flow 5 — Edit transaction: Paycheque read-only view', () => {
     expect(closeButtons.length).toBeGreaterThanOrEqual(1)
     // No "Save" button
     expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument()
-    // No "Delete" text
-    expect(screen.queryByText(/^delete$/i)).not.toBeInTheDocument()
+    // Delete button is present (paycheques can be soft-deleted)
+    expect(screen.getByText(/^delete$/i)).toBeInTheDocument()
   })
 
   it('calls onClose when Close is clicked', async () => {

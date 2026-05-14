@@ -9,20 +9,19 @@ interface Props {
 
 /**
  * Compact source label on a transaction row.
- *   - bank_account_id set  → shows the account name (e.g. "CW", "BW", "CC")
- *   - no bank_account_id, no import_batch_id → "Manual"
+ *   - bank_account_id set  → shows account name in its badge_color (no pill)
+ *   - no bank_account_id, no import_batch_id → "Manual" (grey, no pill)
  *   - imported but no bank_account_id (legacy) → nothing
  */
 export function SourceBadge({ bankAccountId, importBatchId, accounts, className = '' }: Props) {
   if (bankAccountId) {
-    const label = accounts.find(a => a.id === bankAccountId)?.name ?? '?'
+    const account = accounts.find(a => a.id === bankAccountId)
+    const label   = account?.name ?? '?'
+    const color   = account?.badge_color ?? 'var(--pink)'
     return (
       <span
-        className={`rounded px-1.5 py-0.5 text-xs font-medium truncate max-w-full block ${className}`}
-        style={{
-          background: 'color-mix(in srgb, var(--pink) 12%, transparent)',
-          color:      'var(--pink)',
-        }}
+        className={`text-xs truncate max-w-full block ${className}`}
+        style={{ color, fontWeight: 500 }}
         title={label}
       >
         {label}
@@ -33,11 +32,8 @@ export function SourceBadge({ bankAccountId, importBatchId, accounts, className 
   if (!importBatchId) {
     return (
       <span
-        className={`rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${className}`}
-        style={{
-          background: 'color-mix(in srgb, var(--text-subtle) 15%, transparent)',
-          color:      'var(--text-subtle)',
-        }}
+        className={`text-xs whitespace-nowrap ${className}`}
+        style={{ color: 'var(--text-subtle)', fontWeight: 500 }}
       >
         Manual
       </span>
@@ -47,11 +43,8 @@ export function SourceBadge({ bankAccountId, importBatchId, accounts, className 
   // Imported but no bank account linked (legacy or user didn't select one)
   return (
     <span
-      className={`rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${className}`}
-      style={{
-        background: 'color-mix(in srgb, var(--text-subtle) 10%, transparent)',
-        color:      'var(--text-subtle)',
-      }}
+      className={`text-xs whitespace-nowrap ${className}`}
+      style={{ color: 'var(--text-subtle)', fontWeight: 500 }}
     >
       Imported
     </span>

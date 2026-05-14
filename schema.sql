@@ -70,6 +70,7 @@ create table if not exists bank_accounts (
   name               text not null check (char_length(name) <= 50),
   balance            numeric(10,2),
   balance_updated_at timestamptz,
+  badge_color        text,
   created_at         timestamptz not null default now()
 );
 

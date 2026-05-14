@@ -66,6 +66,7 @@ export interface BankAccount {
   name:               string
   balance:            number | null
   balance_updated_at: string | null
+  badge_color:        string | null
   created_at:         string
 }
 
