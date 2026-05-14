@@ -43,13 +43,28 @@ const TX_GRID = '7rem 1fr 8rem 7rem 2rem 6rem'
 
 // ── Row ───────────────────────────────────────────────────────────────────────
 
-function TxRow({ tx, envelopes, accounts, onEdit }: {
-  tx: Transaction; envelopes: Envelope[]; accounts: BankAccount[]; onEdit: (t: Transaction) => void
+function TxRow({ tx, envelopes, accounts, onEdit, selectedEnvelopeId }: {
+  tx: Transaction; envelopes: Envelope[]; accounts: BankAccount[]
+  onEdit: (t: Transaction) => void
+  selectedEnvelopeId?: string | null
 }) {
-  const isIncome     = tx.amount > 0
+  // When filtering by a specific envelope, show only that envelope's slice of a
+  // split transaction (paycheque allocation or cash-income-split) rather than
+  // the full transaction total.
+  const effectiveAmount =
+    selectedEnvelopeId && tx.splits?.[selectedEnvelopeId] != null
+      ? (tx.splits[selectedEnvelopeId] as number)
+      : tx.amount
+
+  const isIncome     = effectiveAmount > 0
   const amountColour = isIncome ? 'var(--success)' : 'var(--text-muted)'
   const hasReview    = tx.review && !tx.envelope_id && !(tx.splits && Object.keys(tx.splits).length > 0)
-  const envName      = envelopeName(tx.envelope_id, envelopes, tx.splits)
+
+  // When filtered by envelope, resolve split rows to that envelope's name instead of "Split"
+  const envName =
+    selectedEnvelopeId && tx.splits?.[selectedEnvelopeId] != null
+      ? (envelopes.find(e => e.id === selectedEnvelopeId)?.name ?? '—')
+      : envelopeName(tx.envelope_id, envelopes, tx.splits)
 
   const sharedProps = {
     className: 'tx-row cursor-pointer select-none',
@@ -77,7 +92,7 @@ function TxRow({ tx, envelopes, accounts, onEdit }: {
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <span className="text-sm font-medium tabular-nums" style={{ color: amountColour }}>
-            {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
+            {isIncome ? '+' : ''}{formatCurrency(effectiveAmount)}
           </span>
           <SourceBadge
             bankAccountId={tx.bank_account_id}
@@ -131,7 +146,7 @@ function TxRow({ tx, envelopes, accounts, onEdit }: {
 
         {/* Amount */}
         <span className="text-right text-sm font-medium tabular-nums" style={{ color: amountColour }}>
-          {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
+          {isIncome ? '+' : ''}{formatCurrency(effectiveAmount)}
         </span>
       </div>
 
@@ -223,15 +238,15 @@ export function TransactionsPage() {
   const [addOpen,     setAddOpen]     = useState(false)
   const [importOpen,  setImportOpen]  = useState(false)
 
-  // Local filter state (drives store)
+  // Local filter state — initialised from URL params on first render
   const [search,     setSearchLocal]  = useState(filters.search)
-  const [envelopeId, setEnvelopeId]   = useState(filters.envelopeId ?? '')
+  const [envelopeId, setEnvelopeId]   = useState(() => searchParams.get('envelope') ?? filters.envelopeId ?? '')
   const [kind,       setKind]         = useState<string>(filters.kind ?? '')
   const [dateFrom,   setDateFrom]     = useState(filters.dateFrom ?? '')
   const [dateTo,     setDateTo]       = useState(filters.dateTo ?? '')
-  const [unassigned, setUnassigned]   = useState(filters.unassigned)
+  const [unassigned, setUnassigned]   = useState(() => searchParams.get('unassigned') === 'true' || filters.unassigned)
 
-  // Initialise from URL params once on mount
+  // Sync URL params to the store once on mount
   useEffect(() => {
     const ua = searchParams.get('unassigned') === 'true'
     const ev = searchParams.get('envelope') ?? ''
@@ -243,8 +258,6 @@ export function TransactionsPage() {
       dateTo:     null,
       unassigned: ua,
     }
-    if (ua) setUnassigned(true)
-    if (ev) setEnvelopeId(ev)
     fetchEnvelopes()
     void fetchAccounts()
     setFilters(initial)
@@ -356,7 +369,8 @@ export function TransactionsPage() {
         {!isLoading && transactions.length > 0 && (
           <>
             {transactions.map(tx => (
-              <TxRow key={tx.id} tx={tx} envelopes={envelopes} accounts={accounts} onEdit={setEditTx} />
+              <TxRow key={tx.id} tx={tx} envelopes={envelopes} accounts={accounts}
+                onEdit={setEditTx} selectedEnvelopeId={filters.envelopeId} />
             ))}
           </>
         )}

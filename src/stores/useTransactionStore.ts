@@ -79,28 +79,49 @@ export const useTransactionStore = create<TransactionState & TransactionActions>
     const { page, filters } = get()
     set({ isFetching: true })
 
-    let q = supabase
-      .from('transactions')
-      .select('*')
-      .eq('deleted', false)
-      .order('date', { ascending: false })
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+    let rows: Transaction[]
+    let fetchError: string | null
 
-    if (filters.envelopeId) q = q.eq('envelope_id', filters.envelopeId)
-    // Ignored transactions are hidden by default; selecting "Ignored" in the
-    // kind filter shows only ignored rows; any other kind filter excludes them naturally.
-    if (filters.kind)       q = q.eq('kind', filters.kind)
-    else                    q = q.neq('kind', 'ignored')
-    if (filters.dateFrom)   q = q.gte('date', filters.dateFrom)
-    if (filters.dateTo)     q = q.lte('date', filters.dateTo)
-    if (filters.unassigned) q = q.is('envelope_id', null).is('splits', null)
-    if (filters.search)     q = q.ilike('description', `%${filters.search}%`)
-
-    const { data, error } = await q
-    if (error) {
-      set({ isFetching: false, error: error.message })
+    if (filters.envelopeId) {
+      // Use RPC to also match paycheque/split rows where the envelope appears
+      // as a key in the splits JSONB map (splits ? uuid), which PostgREST
+      // does not expose as a standard filter operator.
+      const { data, error } = await supabase.rpc('transactions_for_envelope', {
+        p_envelope_id: filters.envelopeId,
+        p_kind:        filters.kind ?? null,
+        p_date_from:   filters.dateFrom ?? null,
+        p_date_to:     filters.dateTo ?? null,
+        p_search:      filters.search || null,
+        p_limit:       PAGE_SIZE,
+        p_offset:      page * PAGE_SIZE,
+      })
+      rows       = (data ?? []) as Transaction[]
+      fetchError = error?.message ?? null
     } else {
-      const rows = (data ?? []) as Transaction[]
+      let q = supabase
+        .from('transactions')
+        .select('*')
+        .eq('deleted', false)
+        .order('date', { ascending: false })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+
+      // Ignored transactions are hidden by default; selecting "Ignored" in the
+      // kind filter shows only ignored rows; any other kind filter excludes them naturally.
+      if (filters.kind)       q = q.eq('kind', filters.kind)
+      else                    q = q.neq('kind', 'ignored')
+      if (filters.dateFrom)   q = q.gte('date', filters.dateFrom)
+      if (filters.dateTo)     q = q.lte('date', filters.dateTo)
+      if (filters.unassigned) q = q.is('envelope_id', null).is('splits', null)
+      if (filters.search)     q = q.ilike('description', `%${filters.search}%`)
+
+      const { data, error } = await q
+      rows       = (data ?? []) as Transaction[]
+      fetchError = error?.message ?? null
+    }
+
+    if (fetchError) {
+      set({ isFetching: false, error: fetchError })
+    } else {
       set(s => ({
         transactions: page === 0 ? rows : [...s.transactions, ...rows],
         hasMore:      rows.length === PAGE_SIZE,

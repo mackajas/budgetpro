@@ -42,6 +42,39 @@ create index if not exists transactions_envelope_idx   on transactions(envelope_
 create index if not exists transactions_review_idx     on transactions(review) where review = true;
 create index if not exists transactions_deleted_idx    on transactions(deleted) where deleted = false;
 
+-- ── RPC: transactions for a specific envelope (includes split rows) ───────────
+-- Returns rows where envelope_id matches OR the envelope appears as a key
+-- in the splits JSONB map (paycheque / cash-income-split transactions).
+create or replace function transactions_for_envelope(
+  p_envelope_id text,
+  p_kind        text    default null,
+  p_date_from   date    default null,
+  p_date_to     date    default null,
+  p_search      text    default null,
+  p_limit       integer default 50,
+  p_offset      integer default 0
+)
+returns setof transactions
+language sql
+stable
+security invoker
+as $$
+  select * from transactions
+  where deleted = false
+    and (
+      envelope_id = p_envelope_id::uuid
+      or (splits is not null and splits ? p_envelope_id)
+    )
+    and (p_kind is null      or kind = p_kind)
+    and (p_kind is not null  or kind != 'ignored')
+    and (p_date_from is null or date >= p_date_from)
+    and (p_date_to   is null or date <= p_date_to)
+    and (p_search    is null or description ilike '%' || p_search || '%')
+  order by date desc
+  limit  p_limit
+  offset p_offset
+$$;
+
 -- ── 3. envelope_allocations ───────────────────────────────────────────────
 create table if not exists envelope_allocations (
   envelope_id     uuid not null references envelopes(id) on delete cascade,
