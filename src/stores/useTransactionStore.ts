@@ -68,7 +68,9 @@ export const useTransactionStore = create<TransactionState & TransactionActions>
       set({ isLoading: false, error: error.message })
     } else {
       const all = (data ?? []) as Transaction[]
-      const reviewCount = all.filter(t => t.review && !t.envelope_id).length
+      const reviewCount = all.filter(t =>
+        t.review && !t.envelope_id && !t.splits && t.kind !== 'paycheque'
+      ).length
       set({ allTransactions: all, isLoading: false, reviewCount })
     }
   },
@@ -91,7 +93,7 @@ export const useTransactionStore = create<TransactionState & TransactionActions>
     else                    q = q.neq('kind', 'ignored')
     if (filters.dateFrom)   q = q.gte('date', filters.dateFrom)
     if (filters.dateTo)     q = q.lte('date', filters.dateTo)
-    if (filters.unassigned) q = q.is('envelope_id', null)
+    if (filters.unassigned) q = q.is('envelope_id', null).is('splits', null)
     if (filters.search)     q = q.ilike('description', `%${filters.search}%`)
 
     const { data, error } = await q
@@ -151,8 +153,8 @@ export const useTransactionStore = create<TransactionState & TransactionActions>
       allTransactions: apply(s.allTransactions),
       reviewCount: s.allTransactions.filter(t =>
         t.id === id
-          ? (patch.review ?? t.review) && !(patch.envelope_id ?? t.envelope_id)
-          : t.review && !t.envelope_id
+          ? (patch.review ?? t.review) && !(patch.envelope_id ?? t.envelope_id) && !(patch.splits ?? t.splits) && t.kind !== 'paycheque'
+          : t.review && !t.envelope_id && !t.splits && t.kind !== 'paycheque'
       ).length,
     }))
   },

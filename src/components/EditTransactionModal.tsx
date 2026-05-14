@@ -277,6 +277,7 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
           patch.envelope_id   = null
           patch.how_categorised = 'split'
           patch.kind          = kind === 'cash-income' ? 'cash-income-split' : kind
+          patch.review        = false
         } else {
           patch.envelope_id   = envelopeId || null
           patch.splits        = null
