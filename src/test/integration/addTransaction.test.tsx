@@ -101,7 +101,7 @@ describe('Flow 2 — Add transaction: Cash income tab', () => {
 // ── Flow 3: Other tab ─────────────────────────────────────────────────────────
 
 describe('Flow 3 — Add transaction: Other tab', () => {
-  it('shows kind dropdown with income-other and ignored options', async () => {
+  it('shows kind dropdown with income-other and move-money options (no Ignored)', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AddTransactionModal onClose={() => {}} />)
 
@@ -112,40 +112,41 @@ describe('Flow 3 — Add transaction: Other tab', () => {
     const [kindSelect] = screen.getAllByRole('combobox')
     const options = Array.from(kindSelect.querySelectorAll('option')).map(o => o.textContent)
     expect(options).toContain('Other income')
-    expect(options).toContain('Ignored')
+    expect(options).toContain('Move money')
+    expect(options).not.toContain('Ignored')
   })
 
-  it('hides envelope field when kind = ignored', async () => {
+  it('shows move-money UI when kind = move-money', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AddTransactionModal onClose={() => {}} />)
 
     await user.click(screen.getByRole('button', { name: 'Other' }))
 
-    // Two comboboxes on Other tab (kind + envelope for income-other default)
     const [kindSelect] = screen.getAllByRole('combobox')
-    await user.selectOptions(kindSelect, 'ignored')
+    await user.selectOptions(kindSelect, 'move-money')
 
-    // After selecting ignored, envelope selector disappears — only kind remains
-    expect(screen.getAllByRole('combobox')).toHaveLength(1)
+    // "From" and "To" envelope selectors appear
+    expect(screen.getByText(/from envelope/i)).toBeInTheDocument()
+    expect(screen.getByText(/to envelope/i)).toBeInTheDocument()
   })
 
-  it('submits an ignored transaction and calls onClose', async () => {
+  it('submits an income-other transaction and calls onClose', async () => {
     const user    = userEvent.setup()
     const onClose = vi.fn()
     renderWithProviders(<AddTransactionModal onClose={onClose} />)
 
     await user.click(screen.getByRole('button', { name: 'Other' }))
 
-    // Select Ignored from the kind combobox (first)
-    const [kindSelect] = screen.getAllByRole('combobox')
-    await user.selectOptions(kindSelect, 'ignored')
-
-    // Fill required fields
+    // Default kind is income-other — fill out amount, description, envelope
     const amountInput = screen.getByPlaceholderText('0.00')
     await user.clear(amountInput)
-    await user.type(amountInput, '-50')
+    await user.type(amountInput, '200')
 
-    await user.type(screen.getByPlaceholderText('Transaction description'), 'Bank fee')
+    await user.type(screen.getByPlaceholderText('Transaction description'), 'Side income')
+
+    // Second combobox is the envelope selector
+    const selects = screen.getAllByRole('combobox')
+    await user.selectOptions(selects[1], 'env-groceries')
 
     await user.click(screen.getByRole('button', { name: /add transaction/i }))
 
@@ -161,12 +162,12 @@ describe('Flow 3 — Add transaction: Other tab', () => {
     // Default is income-other — two comboboxes present (kind + envelope)
     expect(screen.getAllByRole('combobox')).toHaveLength(2)
 
-    // Switch to ignored → envelope disappears
+    // Switch to move-money → From + To selectors replace the envelope selector
     const [kindSelect] = screen.getAllByRole('combobox')
-    await user.selectOptions(kindSelect, 'ignored')
-    expect(screen.getAllByRole('combobox')).toHaveLength(1)
+    await user.selectOptions(kindSelect, 'move-money')
+    expect(screen.getByText(/from envelope/i)).toBeInTheDocument()
 
-    // Switch back to income-other → envelope re-appears
+    // Switch back to income-other → envelope selector returns
     await user.selectOptions(screen.getAllByRole('combobox')[0], 'income-other')
     expect(screen.getAllByRole('combobox')).toHaveLength(2)
   })

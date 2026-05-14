@@ -16,10 +16,11 @@ interface BankAccountState {
 }
 
 interface BankAccountActions {
-  fetch:       () => Promise<void>
-  add:         (name: string) => Promise<void>
-  updateBalance: (id: string, balance: number) => Promise<void>
-  remove:      (id: string) => Promise<void>
+  fetch:            () => Promise<void>
+  add:              (name: string) => Promise<void>
+  updateBalance:    (id: string, balance: number) => Promise<void>
+  updateBadgeColor: (id: string, color: string) => Promise<void>
+  remove:           (id: string) => Promise<void>
   saveReconciliation: (params: {
     bankTotal:    number
     envelopeTotal: number
@@ -73,6 +74,17 @@ export const useBankAccountStore = create<BankAccountState & BankAccountActions>
           ? { ...a, balance, balance_updated_at: new Date().toISOString() }
           : a,
       ),
+    }))
+  },
+
+  updateBadgeColor: async (id: string, color: string) => {
+    const { error } = await supabase
+      .from('bank_accounts')
+      .update({ badge_color: color })
+      .eq('id', id)
+    if (error) throw error
+    set(s => ({
+      accounts: s.accounts.map(a => a.id === id ? { ...a, badge_color: color } : a),
     }))
   },
 

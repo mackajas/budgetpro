@@ -13,7 +13,7 @@ import { useToast }                  from '../../contexts/ToastContext'
 import { formatCurrency, formatDate } from '../../lib/formatters'
 
 export function BankAccountsPage() {
-  const { accounts, isLoading, fetch, add, remove } = useBankAccountStore()
+  const { accounts, isLoading, fetch, add, remove, updateBadgeColor } = useBankAccountStore()
   const { toast } = useToast()
 
   const [newName,    setNewName]    = useState('')
@@ -119,6 +119,25 @@ export function BankAccountsPage() {
                     : 'No balance recorded'}
                 </p>
               </div>
+
+              {/* Badge colour picker */}
+              <label
+                className="flex items-center gap-1.5 cursor-pointer"
+                title="Label colour"
+              >
+                <span className="text-xs" style={{ color: 'var(--text-subtle)' }}>Colour</span>
+                <input
+                  type="color"
+                  value={account.badge_color ?? '#9CA3AF'}
+                  onChange={e => {
+                    updateBadgeColor(account.id, e.target.value).catch(() =>
+                      toast('Failed to update colour', 'error')
+                    )
+                  }}
+                  className="h-6 w-6 cursor-pointer rounded border-0 p-0"
+                  style={{ background: 'none' }}
+                />
+              </label>
 
               {/* Delete / Confirm */}
               {confirmId === account.id ? (
