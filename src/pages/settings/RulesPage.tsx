@@ -25,6 +25,7 @@ export function RulesPage() {
   const [isLoading,  setIsLoading]  = useState(false)
   const [confirmId,  setConfirmId]  = useState<string | null>(null)
   const [deleting,   setDeleting]   = useState<string | null>(null)
+  const [ruleFilter, setRuleFilter] = useState<'all' | 'envelope' | 'ignore'>('all')
 
   // New rule form state
   const [keyword,   setKeyword]   = useState('')
@@ -62,6 +63,12 @@ export function RulesPage() {
     () => new Map(envelopes.map(e => [e.id, e.name])),
     [envelopes],
   )
+
+  const visibleRules = useMemo(() => {
+    if (ruleFilter === 'envelope') return rules.filter(r => r.envelope_id !== null)
+    if (ruleFilter === 'ignore')   return rules.filter(r => r.envelope_id === null)
+    return rules
+  }, [rules, ruleFilter])
 
   async function handleAdd() {
     if (!keyword.trim()) { toast('Enter a keyword', 'error'); return }
@@ -197,6 +204,24 @@ export function RulesPage() {
       )}
 
       {!isLoading && rules.length > 0 && (
+        <>
+          {/* Filter tabs */}
+          <div className="flex gap-1 mb-3">
+            {(['all', 'envelope', 'ignore'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setRuleFilter(f)}
+                className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                style={ruleFilter === f
+                  ? { background: 'var(--pink)', color: '#fff' }
+                  : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
+                }
+              >
+                {f === 'all' ? `All (${rules.length})` : f === 'envelope' ? `Envelope (${rules.filter(r => r.envelope_id !== null).length})` : `Ignore (${rules.filter(r => r.envelope_id === null).length})`}
+              </button>
+            ))}
+          </div>
+
         <div className="card overflow-hidden">
           {/* Column headers */}
           <div
@@ -214,7 +239,7 @@ export function RulesPage() {
             <span />
           </div>
 
-          {rules.map(rule => (
+          {visibleRules.map(rule => (
             <div
               key={rule.id}
               className="flex flex-wrap sm:grid items-center gap-3 sm:gap-4 px-4 py-3
@@ -287,6 +312,7 @@ export function RulesPage() {
             </div>
           ))}
         </div>
+        </>
       )}
     </div>
   )
