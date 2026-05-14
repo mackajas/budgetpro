@@ -56,7 +56,7 @@ create table if not exists envelope_allocations (
 create table if not exists category_rules (
   id          uuid primary key default gen_random_uuid(),
   keyword     text not null,
-  envelope_id uuid not null references envelopes(id) on delete cascade,
+  envelope_id uuid references envelopes(id) on delete cascade,
   source      text not null check (source in ('default','manual','learned')),
   priority    integer not null default 100,
   created_at  timestamptz not null default now()

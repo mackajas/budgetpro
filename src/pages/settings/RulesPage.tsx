@@ -65,7 +65,7 @@ export function RulesPage() {
 
   async function handleAdd() {
     if (!keyword.trim()) { toast('Enter a keyword', 'error'); return }
-    if (!envId)          { toast('Select an envelope', 'error'); return }
+    if (!envId)          { toast('Select an envelope or choose Ignore', 'error'); return }
     const pri = parseInt(priority, 10)
     if (isNaN(pri) || pri < 1 || pri > 999) {
       toast('Priority must be 1–999', 'error'); return
@@ -76,7 +76,7 @@ export function RulesPage() {
         .from('category_rules')
         .insert({
           keyword:     keyword.trim().toLowerCase(),
-          envelope_id: envId,
+          envelope_id: envId === '__ignore__' ? null : envId,
           source:      'manual',
           priority:    pri,
         })
@@ -126,9 +126,9 @@ export function RulesPage() {
       </div>
 
       <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
-        Keyword rules automatically assign envelopes during import. Lower priority
-        numbers match first. Learned rules are created automatically from your
-        previous categorisations.
+        Keyword rules automatically assign envelopes during import. Select
+        "— Ignore transaction —" to silently skip matching transactions. Lower
+        priority numbers match first.
       </p>
 
       {/* Add rule form */}
@@ -154,6 +154,7 @@ export function RulesPage() {
           <select className="select text-sm w-full" value={envId}
             onChange={e => setEnvId(e.target.value)}>
             <option value="">Select…</option>
+            <option value="__ignore__">— Ignore transaction —</option>
             {leafEnvelopes.map(e => (
               <option key={e.id} value={e.id}>{e.name}</option>
             ))}
@@ -227,7 +228,18 @@ export function RulesPage() {
                 {rule.keyword}
               </span>
               <span className="truncate" style={{ color: 'var(--text-muted)' }}>
-                {envMap.get(rule.envelope_id) ?? '—'}
+                {rule.envelope_id
+                  ? (envMap.get(rule.envelope_id) ?? '—')
+                  : <span
+                      className="rounded-full px-2 py-0.5 text-xs font-medium"
+                      style={{
+                        background: 'color-mix(in srgb, var(--danger) 10%, transparent)',
+                        color: 'var(--danger)',
+                      }}
+                    >
+                      Ignore
+                    </span>
+                }
               </span>
               <span className="text-center tabular-nums" style={{ color: 'var(--text-muted)' }}>
                 {rule.priority}

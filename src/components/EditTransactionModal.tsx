@@ -303,7 +303,7 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
         } else {
           patch.envelope_id   = envelopeId || null
           patch.splits        = null
-          patch.review        = envelopeId ? false : tx.review
+          patch.review        = (envelopeId || kind === 'ignored') ? false : tx.review
           if (envelopeId && tx.review) patch.how_categorised = 'manual'
         }
       }

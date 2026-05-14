@@ -69,7 +69,7 @@ export const useTransactionStore = create<TransactionState & TransactionActions>
     } else {
       const all = (data ?? []) as Transaction[]
       const reviewCount = all.filter(t =>
-        t.review && !t.envelope_id && !t.splits && t.kind !== 'paycheque'
+        t.review && !t.envelope_id && !t.splits && t.kind !== 'paycheque' && t.kind !== 'ignored'
       ).length
       set({ allTransactions: all, isLoading: false, reviewCount })
     }
@@ -153,8 +153,8 @@ export const useTransactionStore = create<TransactionState & TransactionActions>
       allTransactions: apply(s.allTransactions),
       reviewCount: s.allTransactions.filter(t =>
         t.id === id
-          ? (patch.review ?? t.review) && !(patch.envelope_id ?? t.envelope_id) && !(patch.splits ?? t.splits) && t.kind !== 'paycheque'
-          : t.review && !t.envelope_id && !t.splits && t.kind !== 'paycheque'
+          ? (patch.review ?? t.review) && !(patch.envelope_id ?? t.envelope_id) && !(patch.splits ?? t.splits) && (patch.kind ?? t.kind) !== 'paycheque' && (patch.kind ?? t.kind) !== 'ignored'
+          : t.review && !t.envelope_id && !t.splits && t.kind !== 'paycheque' && t.kind !== 'ignored'
       ).length,
     }))
   },

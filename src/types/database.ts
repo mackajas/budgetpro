@@ -54,7 +54,7 @@ export interface EnvelopeAllocation {
 export interface CategoryRule {
   id:          string
   keyword:     string
-  envelope_id: string
+  envelope_id: string | null  // null = ignore rule (no envelope assignment)
   source:      AllocationSource
   priority:    number
   created_at:  string
