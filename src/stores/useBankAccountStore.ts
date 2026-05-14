@@ -20,6 +20,12 @@ interface BankAccountActions {
   add:              (name: string) => Promise<void>
   updateBalance:    (id: string, balance: number) => Promise<void>
   updateBadgeColor: (id: string, color: string) => Promise<void>
+  updateAccount:    (id: string, patch: {
+    name?:         string
+    badge_color?:  string
+    account_type?: string
+    balance?:      number
+  }) => Promise<void>
   remove:           (id: string) => Promise<void>
   saveReconciliation: (params: {
     bankTotal:    number
@@ -85,6 +91,38 @@ export const useBankAccountStore = create<BankAccountState & BankAccountActions>
     if (error) throw error
     set(s => ({
       accounts: s.accounts.map(a => a.id === id ? { ...a, badge_color: color } : a),
+    }))
+  },
+
+  updateAccount: async (id: string, patch) => {
+    const dbPatch: Record<string, unknown> = {}
+    if (patch.name         !== undefined) dbPatch.name         = patch.name
+    if (patch.badge_color  !== undefined) dbPatch.badge_color  = patch.badge_color
+    if (patch.account_type !== undefined) dbPatch.account_type = patch.account_type
+    if (patch.balance      !== undefined) {
+      dbPatch.balance            = patch.balance
+      dbPatch.balance_updated_at = new Date().toISOString()
+    }
+    const { error } = await supabase
+      .from('bank_accounts')
+      .update(dbPatch)
+      .eq('id', id)
+    if (error) throw error
+    set(s => ({
+      accounts: s.accounts.map(a =>
+        a.id === id
+          ? {
+              ...a,
+              ...(patch.name         !== undefined && { name:         patch.name }),
+              ...(patch.badge_color  !== undefined && { badge_color:  patch.badge_color }),
+              ...(patch.account_type !== undefined && { account_type: patch.account_type }),
+              ...(patch.balance      !== undefined && {
+                balance:            patch.balance,
+                balance_updated_at: new Date().toISOString(),
+              }),
+            }
+          : a,
+      ),
     }))
   },
 

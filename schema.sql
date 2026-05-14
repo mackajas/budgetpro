@@ -104,6 +104,7 @@ create table if not exists bank_accounts (
   balance            numeric(10,2),
   balance_updated_at timestamptz,
   badge_color        text,
+  account_type       text,
   created_at         timestamptz not null default now()
 );
 
