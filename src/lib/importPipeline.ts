@@ -223,11 +223,18 @@ export async function runImportPipeline(params: {
         settings,
         Math.abs(amount),
       )
+      // For Employer 2 (multi-component), pass the combined gross so fixed
+      // allocations are distributed pro-rata rather than applied in full to
+      // each component separately.
+      const totalGross = paychequeResult.employerId === 2
+        ? (settings.employer_2_pay_1 ?? 0) + (settings.employer_2_pay_2 ?? 0)
+        : undefined
       const split = buildPaychequeSplit(
         envelopes,
         allocations,
         gross,
         paychequeResult.employerId,
+        totalGross,
       )
       splits = Object.keys(split.splits).length > 0 ? split.splits : null
     } else {

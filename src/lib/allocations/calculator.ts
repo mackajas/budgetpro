@@ -7,12 +7,12 @@
  *
  * Pass 1 — Top-level allocations (parents + standalones)
  *   For each top-level envelope with an allocation for this employer:
- *     fixed      → dollar amount = value
+ *     fixed      → dollar amount = value  (scaled by gross/totalGross when multi-component)
  *     percentage → dollar amount = round(gross × value ÷ 100, 2)
  *
  * Pass 2 — Child envelope subdivision
  *   For each child envelope with an allocation for this employer:
- *     fixed      → dollar amount = value  (absolute $, not relative)
+ *     fixed      → dollar amount = value  (absolute $, scaled by gross/totalGross)
  *     percentage → dollar amount = round(parentDollarAmount × value ÷ 100, 2)
  *
  * ── Splits output ────────────────────────────────────────────────────────────
@@ -83,7 +83,14 @@ export function buildPaychequeSplit(
   allocations: EnvelopeAllocation[],
   gross:       number,
   employerId:  1 | 2,
+  totalGross?: number,
 ): PaychequeSplit {
+  // When an employer has multiple paycheque components, fixed allocations are
+  // defined against the combined total but must be distributed pro-rata across
+  // each component. Percentages naturally produce the right share of the
+  // component gross, so only fixed amounts need scaling.
+  const scaleFactor = (totalGross != null && totalGross > 0) ? gross / totalGross : 1
+
   // Filter allocations to this employer only
   const empAllocations = allocations.filter(a => a.employer_id === employerId)
   const allocByEnvId   = new Map(empAllocations.map(a => [a.envelope_id, a]))
@@ -106,9 +113,10 @@ export function buildPaychequeSplit(
     if (isChild(env.id)) continue  // skip children in pass 1
     const alloc = allocByEnvId.get(env.id)
     if (!alloc) continue
+    const raw = computeAllocationAmount(alloc.allocation_type, alloc.value, gross)
     topLevelAmounts.set(
       env.id,
-      computeAllocationAmount(alloc.allocation_type, alloc.value, gross),
+      alloc.allocation_type === 'fixed' ? round2(raw * scaleFactor) : raw,
     )
   }
 
@@ -120,9 +128,10 @@ export function buildPaychequeSplit(
     const alloc = allocByEnvId.get(env.id)
     if (!alloc) continue
     const parentAmount = topLevelAmounts.get(env.parent_id!) ?? 0
+    const raw = computeAllocationAmount(alloc.allocation_type, alloc.value, parentAmount)
     childAmounts.set(
       env.id,
-      computeAllocationAmount(alloc.allocation_type, alloc.value, parentAmount),
+      alloc.allocation_type === 'fixed' ? round2(raw * scaleFactor) : raw,
     )
   }
 
