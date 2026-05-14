@@ -2,9 +2,13 @@
  * Add Transaction Modal  (BRD §4.6.3)
  *
  * Three tabs:
- *   Expense  — negative amount, single envelope
- *   Cash     — positive amount, single envelope or split across multiple
- *   Other    — signed amount, kind = income-other | ignored, optional envelope
+ *   Expense    — negative amount, single envelope or split
+ *   Cash       — positive amount, single envelope or split
+ *   Other      — signed amount, kind = income-other | move-money
+ *
+ * Move money: takes $X from a source envelope and credits destination(s).
+ *   Stored as kind='move-money', amount=-X, envelope_id=source,
+ *   splits={dest: X} (always uses splits even for single destination).
  */
 
 import { useState }            from 'react'
@@ -58,6 +62,10 @@ function EnvelopeSelect({
 
 interface SplitLine { id: string; envelopeId: string; amount: string }
 
+function newLine(): SplitLine {
+  return { id: crypto.randomUUID(), envelopeId: '', amount: '' }
+}
+
 function SplitLines({
   total, envelopes, lines, onChange,
 }: {
@@ -101,7 +109,7 @@ function SplitLines({
       </div>
       <button className="flex items-center gap-1 text-xs mb-2 hover:opacity-70 transition-opacity"
         style={{ color: 'var(--pink)' }}
-        onClick={() => onChange([...lines, { id: crypto.randomUUID(), envelopeId: '', amount: '' }])}>
+        onClick={() => onChange([...lines, newLine()])}>
         <Plus className="h-3 w-3" /> Add line
       </button>
       <div className="flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -124,27 +132,49 @@ export function AddTransactionModal({ onClose }: Props) {
   const { add }        = useTransactionStore()
   const { toast }      = useToast()
 
-
   const [tab,         setTab]        = useState<Tab>('expense')
   const [date,        setDate]        = useState(today())
   const [description, setDescription] = useState('')
   const [amount,      setAmount]      = useState('')
-  const [envelopeId,  setEnvelopeId]  = useState('')
   const [notes,       setNotes]       = useState('')
-  const [splitMode,   setSplitMode]   = useState(false)
-  const [splitLines,  setSplitLines]  = useState<SplitLine[]>([
-    { id: crypto.randomUUID(), envelopeId: '', amount: '' },
-    { id: crypto.randomUUID(), envelopeId: '', amount: '' },
-  ])
-  const [otherKind,   setOtherKind]   = useState<TransactionKind>('income-other')
   const [saving,      setSaving]      = useState(false)
+
+  // Expense tab
+  const [expEnvId,      setExpEnvId]      = useState('')
+  const [expSplitMode,  setExpSplitMode]  = useState(false)
+  const [expSplitLines, setExpSplitLines] = useState<SplitLine[]>([newLine(), newLine()])
+
+  // Cash tab
+  const [cashEnvId,      setCashEnvId]      = useState('')
+  const [cashSplitMode,  setCashSplitMode]  = useState(false)
+  const [cashSplitLines, setCashSplitLines] = useState<SplitLine[]>([newLine(), newLine()])
+
+  // Other tab
+  const [otherKind,       setOtherKind]       = useState<TransactionKind>('income-other')
+  const [otherEnvId,      setOtherEnvId]      = useState('')
+  // Move money
+  const [moveSourceId,    setMoveSourceId]    = useState('')
+  const [moveDestSplit,   setMoveDestSplit]   = useState(false)
+  const [moveDestEnvId,   setMoveDestEnvId]   = useState('')
+  const [moveDestLines,   setMoveDestLines]   = useState<SplitLine[]>([newLine(), newLine()])
 
   const amountNum = parseFloat(amount) || 0
 
+  // Amount field label varies by tab/kind
+  const amountLabel = tab === 'expense'
+    ? 'Amount ($)'
+    : tab === 'cash' || (tab === 'other' && otherKind === 'move-money')
+      ? 'Amount ($, positive)'
+      : 'Amount (signed $)'
+
   function validate(): string | null {
-    if (!date)        return 'Date is required.'
-    if (!description.trim()) return 'Description is required.'
+    if (!date)                    return 'Date is required.'
+    if (!description.trim())      return 'Description is required.'
     if (!amount || amountNum === 0) return 'Amount must be non-zero.'
+    if (tab === 'other' && otherKind === 'move-money') {
+      if (!moveSourceId)          return 'Select a source (From) envelope.'
+      if (!moveDestSplit && !moveDestEnvId) return 'Select a destination (To) envelope.'
+    }
     return null
   }
 
@@ -154,46 +184,80 @@ export function AddTransactionModal({ onClose }: Props) {
     setSaving(true)
 
     try {
-      let kind:        TransactionKind = 'expense'
+      let kind:        TransactionKind             = 'expense'
       let finalAmount  = amountNum
-      let envId:       string | null   = envelopeId || null
+      let envId:       string | null               = null
       let splits:      Record<string, number> | null = null
-      let how_categorised = 'manual' as const
 
       if (tab === 'expense') {
         kind        = 'expense'
         finalAmount = -Math.abs(amountNum)
-      } else if (tab === 'cash') {
-        finalAmount = Math.abs(amountNum)
-        if (splitMode) {
-          kind   = 'cash-income-split'
+        if (expSplitMode) {
           envId  = null
           splits = Object.fromEntries(
-            splitLines
+            expSplitLines
               .filter(l => l.envelopeId && l.amount)
               .map(l => [l.envelopeId, parseFloat(l.amount) || 0]),
           )
           if (Object.keys(splits).length < 2) {
-            toast('Add at least two split lines', 'error')
-            setSaving(false)
-            return
+            toast('Add at least two split lines', 'error'); setSaving(false); return
           }
         } else {
-          kind = 'cash-income'
+          envId = expEnvId || null
         }
+
+      } else if (tab === 'cash') {
+        finalAmount = Math.abs(amountNum)
+        if (cashSplitMode) {
+          kind   = 'cash-income-split'
+          envId  = null
+          splits = Object.fromEntries(
+            cashSplitLines
+              .filter(l => l.envelopeId && l.amount)
+              .map(l => [l.envelopeId, parseFloat(l.amount) || 0]),
+          )
+          if (Object.keys(splits).length < 2) {
+            toast('Add at least two split lines', 'error'); setSaving(false); return
+          }
+        } else {
+          kind  = 'cash-income'
+          envId = cashEnvId || null
+        }
+
       } else {
-        kind        = otherKind
-        finalAmount = amountNum   // signed as entered
+        // Other tab
+        if (otherKind === 'move-money') {
+          kind        = 'move-money'
+          finalAmount = -Math.abs(amountNum)   // stored as negative (debit from source)
+          envId       = moveSourceId            // source envelope
+          if (moveDestSplit) {
+            splits = Object.fromEntries(
+              moveDestLines
+                .filter(l => l.envelopeId && l.amount)
+                .map(l => [l.envelopeId, parseFloat(l.amount) || 0]),
+            )
+            if (Object.keys(splits).length < 2) {
+              toast('Add at least two destination split lines', 'error'); setSaving(false); return
+            }
+          } else {
+            // Single destination — still use splits so computeBalances can credit it
+            splits = { [moveDestEnvId]: Math.abs(amountNum) }
+          }
+        } else {
+          kind        = otherKind
+          finalAmount = amountNum   // signed as entered
+          envId       = otherEnvId || null
+        }
       }
 
       await add({
         date,
-        description: description.trim(),
-        amount:      finalAmount,
+        description:     description.trim(),
+        amount:          finalAmount,
         kind,
         envelope_id:     envId,
         splits,
-        how_categorised,
+        how_categorised: 'manual',
         review:          false,
         notes:           notes.trim() || null,
         import_batch_id: null,
@@ -253,7 +317,7 @@ export function AddTransactionModal({ onClose }: Props) {
             </div>
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>
-                Amount{tab === 'expense' ? ' ($)' : tab === 'cash' ? ' ($, positive)' : ' (signed $)'}
+                {amountLabel}
               </label>
               <input className="input text-sm" type="number" min="0" step="0.01"
                 value={amount} placeholder="0.00"
@@ -267,33 +331,49 @@ export function AddTransactionModal({ onClose }: Props) {
               onChange={e => setDescription(e.target.value)} />
           </div>
 
-          {/* Tab-specific fields */}
-          {(tab === 'expense') && (
-            <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Envelope</label>
-              <EnvelopeSelect envelopes={envelopes} value={envelopeId} onChange={setEnvelopeId} />
-            </div>
+          {/* ── Expense tab ─────────────────────────────────────────────────── */}
+          {tab === 'expense' && (
+            <>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Envelope</label>
+                <label className="flex items-center gap-1.5 text-xs cursor-pointer"
+                  style={{ color: 'var(--text-muted)' }}>
+                  <input type="checkbox" checked={expSplitMode}
+                    onChange={e => setExpSplitMode(e.target.checked)} />
+                  Split across envelopes
+                </label>
+              </div>
+              {expSplitMode ? (
+                <SplitLines total={Math.abs(amountNum)} envelopes={envelopes}
+                  lines={expSplitLines} onChange={setExpSplitLines} />
+              ) : (
+                <EnvelopeSelect envelopes={envelopes} value={expEnvId} onChange={setExpEnvId} />
+              )}
+            </>
           )}
 
+          {/* ── Cash income tab ─────────────────────────────────────────────── */}
           {tab === 'cash' && (
             <>
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Envelope</label>
                 <label className="flex items-center gap-1.5 text-xs cursor-pointer"
                   style={{ color: 'var(--text-muted)' }}>
-                  <input type="checkbox" checked={splitMode} onChange={e => setSplitMode(e.target.checked)} />
+                  <input type="checkbox" checked={cashSplitMode}
+                    onChange={e => setCashSplitMode(e.target.checked)} />
                   Split across envelopes
                 </label>
               </div>
-              {splitMode ? (
+              {cashSplitMode ? (
                 <SplitLines total={amountNum} envelopes={envelopes}
-                  lines={splitLines} onChange={setSplitLines} />
+                  lines={cashSplitLines} onChange={setCashSplitLines} />
               ) : (
-                <EnvelopeSelect envelopes={envelopes} value={envelopeId} onChange={setEnvelopeId} />
+                <EnvelopeSelect envelopes={envelopes} value={cashEnvId} onChange={setCashEnvId} />
               )}
             </>
           )}
 
+          {/* ── Other tab ───────────────────────────────────────────────────── */}
           {tab === 'other' && (
             <>
               <div>
@@ -301,14 +381,56 @@ export function AddTransactionModal({ onClose }: Props) {
                 <select className="select text-sm w-full" value={otherKind}
                   onChange={e => setOtherKind(e.target.value as TransactionKind)}>
                   <option value="income-other">Other income</option>
-                  <option value="ignored">Ignored</option>
+                  <option value="move-money">Move money</option>
                 </select>
               </div>
-              {otherKind !== 'ignored' && (
+
+              {otherKind === 'income-other' && (
                 <div>
                   <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Envelope</label>
-                  <EnvelopeSelect envelopes={envelopes} value={envelopeId} onChange={setEnvelopeId} />
+                  <EnvelopeSelect envelopes={envelopes} value={otherEnvId} onChange={setOtherEnvId} />
                 </div>
+              )}
+
+              {otherKind === 'move-money' && (
+                <>
+                  {/* Source */}
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>
+                      From envelope
+                    </label>
+                    <EnvelopeSelect
+                      envelopes={envelopes}
+                      value={moveSourceId}
+                      onChange={setMoveSourceId}
+                      placeholder="Select source…"
+                    />
+                  </div>
+
+                  {/* Destination */}
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+                      To envelope
+                    </label>
+                    <label className="flex items-center gap-1.5 text-xs cursor-pointer"
+                      style={{ color: 'var(--text-muted)' }}>
+                      <input type="checkbox" checked={moveDestSplit}
+                        onChange={e => setMoveDestSplit(e.target.checked)} />
+                      Split across envelopes
+                    </label>
+                  </div>
+                  {moveDestSplit ? (
+                    <SplitLines total={Math.abs(amountNum)} envelopes={envelopes}
+                      lines={moveDestLines} onChange={setMoveDestLines} />
+                  ) : (
+                    <EnvelopeSelect
+                      envelopes={envelopes}
+                      value={moveDestEnvId}
+                      onChange={setMoveDestEnvId}
+                      placeholder="Select destination…"
+                    />
+                  )}
+                </>
               )}
             </>
           )}

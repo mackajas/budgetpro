@@ -8,6 +8,7 @@ export type TransactionKind =
   | 'income-other'
   | 'opening-balance'
   | 'ignored'
+  | 'move-money'
 
 export type HowCategorised =
   | 'auto-paycheque'

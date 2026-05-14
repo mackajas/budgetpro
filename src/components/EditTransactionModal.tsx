@@ -153,6 +153,75 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
+// ── Move Money read-only view ─────────────────────────────────────────────────
+
+function MoveMoneyView({
+  tx, envelopes, onClose, onDelete, deleting,
+}: { tx: Transaction; envelopes: Envelope[]; onClose: () => void; onDelete: () => void; deleting: boolean }) {
+  const [confirming, setConfirming] = useState(false)
+  const sourceEnv = envelopes.find(e => e.id === tx.envelope_id)
+  const splits    = tx.splits ?? {}
+  const destEntries = Object.entries(splits)
+
+  return (
+    <>
+      <div className="flex flex-col gap-3 mb-5">
+        <Row label="Date"        value={formatDate(tx.date)} />
+        <Row label="Description" value={tx.description} />
+        <Row label="Amount"      value={formatCurrency(Math.abs(tx.amount))} />
+        <Row label="From"        value={sourceEnv?.name ?? '—'} />
+
+        {destEntries.length > 0 && (
+          <div>
+            <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
+              {destEntries.length === 1 ? 'To' : 'To (split)'}
+            </p>
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+              {destEntries.map(([envId, amt]) => {
+                const env = envelopes.find(e => e.id === envId)
+                return (
+                  <div key={envId}
+                    className="flex justify-between items-center border-b px-3 py-2 text-sm last:border-b-0"
+                    style={{ borderColor: 'var(--border)' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{env?.name ?? '—'}</span>
+                    <span className="tabular-nums" style={{ color: 'var(--text)' }}>
+                      {formatCurrency(amt as number)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {confirming && (
+        <div className="mb-4 rounded-lg p-3 text-sm"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+          <p className="mb-3">Delete this transfer? This cannot be undone.</p>
+          <div className="flex gap-2">
+            <button className="btn-danger text-xs px-3 py-1.5" onClick={onDelete} disabled={deleting}>
+              Yes, delete
+            </button>
+            <button className="btn-ghost text-xs px-3 py-1.5" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <button className="flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70"
+          style={{ color: 'var(--text-subtle)' }}
+          onClick={() => setConfirming(true)}>
+          <Trash2 className="h-3.5 w-3.5" /> Delete
+        </button>
+        <button className="btn-primary" onClick={onClose}>Close</button>
+      </div>
+    </>
+  )
+}
+
 // ── Split editor ──────────────────────────────────────────────────────────────
 
 interface SplitLine { id: string; envelopeId: string; amount: string }
@@ -259,6 +328,7 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
   const { toast }                      = useToast()
 
   const isPaycheque  = tx.kind === 'paycheque'
+  const isMoveMoney  = tx.kind === 'move-money'
   const isOpeningBal = tx.kind === 'opening-balance'
   const isImported   = tx.import_batch_id !== null
   const { orphans: mainOrphans, groups: mainGroups } = buildEnvelopeGroups(envelopes)
@@ -267,7 +337,8 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
   const [envelopeId,  setEnvelopeId]  = useState<string>(tx.envelope_id ?? '')
   const [notes,       setNotes]       = useState(tx.notes ?? '')
   const [splitMode,   setSplitMode]   = useState(
-    tx.kind === 'cash-income-split' || (tx.splits && Object.keys(tx.splits).length > 0),
+    tx.kind === 'cash-income-split' ||
+    (tx.kind !== 'move-money' && tx.splits && Object.keys(tx.splits).length > 0),
   )
   const [splits,      setSplits]      = useState<Record<string, number> | null>(tx.splits)
   const [saving,      setSaving]      = useState(false)
@@ -346,6 +417,8 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
 
         {isPaycheque ? (
           <PaychequeView tx={tx} envelopes={envelopes} onClose={onClose} onDelete={handleDelete} deleting={saving} />
+        ) : isMoveMoney ? (
+          <MoveMoneyView tx={tx} envelopes={envelopes} onClose={onClose} onDelete={handleDelete} deleting={saving} />
         ) : (
           <>
             {/* Locked fields (imported) */}

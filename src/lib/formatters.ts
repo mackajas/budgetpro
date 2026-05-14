@@ -33,4 +33,5 @@ export const KIND_LABELS: Record<string, string> = {
   'income-other':   'Other income',
   'opening-balance': 'Opening balance',
   ignored:          'Ignored',
+  'move-money':     'Move money',
 }
