@@ -20,78 +20,8 @@ import { useEnvelopeStore }      from '../stores/useEnvelopeStore'
 import { computeBalances, computeDisplayBalances } from '../lib/balances'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { useToast }              from '../contexts/ToastContext'
+import { EditBankAccountModal, accountTypeIcon } from '../components/EditBankAccountModal'
 import type { BankAccount }      from '../types/database'
-
-// ── Edit Balance Modal ────────────────────────────────────────────────────────
-
-function EditBalanceModal({
-  account,
-  onClose,
-}: {
-  account: BankAccount
-  onClose: () => void
-}) {
-  const { updateBalance } = useBankAccountStore()
-  const { toast }         = useToast()
-
-  const [value,  setValue]  = useState(account.balance !== null ? String(account.balance) : '')
-  const [saving, setSaving] = useState(false)
-
-  async function handleSave() {
-    const num = parseFloat(value)
-    if (isNaN(num)) { toast('Enter a valid balance', 'error'); return }
-    setSaving(true)
-    try {
-      await updateBalance(account.id, num)
-      toast('Balance updated')
-      onClose()
-    } catch {
-      toast('Failed to update balance', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
-        <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--text)' }}>
-          Edit Balance — {account.name}
-        </h2>
-
-        <div className="mb-5">
-          <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>
-            Current balance ($)
-          </label>
-          <div className="relative">
-            <span
-              className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm"
-              style={{ color: 'var(--text-subtle)' }}
-            >$</span>
-            <input
-              className="input pl-7 text-sm"
-              type="number"
-              step="0.01"
-              autoFocus
-              value={value}
-              onChange={e => setValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
-              placeholder="0.00"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <span className="spinner" /> : null}
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ── Reconcile notes modal ─────────────────────────────────────────────────────
 
@@ -210,11 +140,12 @@ function AccountCard({
   onEdit,
 }: { account: BankAccount; onEdit: () => void }) {
   const hasBalance = account.balance !== null
+  const TypeIcon   = accountTypeIcon(account.account_type)
   return (
     <div className="card rounded-xl p-5 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Landmark className="h-4 w-4 shrink-0" style={{ color: 'var(--text-subtle)' }} />
+          <TypeIcon className="h-4 w-4 shrink-0" style={{ color: 'var(--text-subtle)' }} />
           <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
             {account.name}
           </span>
@@ -223,6 +154,7 @@ function AccountCard({
           className="flex items-center gap-1 text-xs transition-opacity hover:opacity-70"
           style={{ color: 'var(--pink)' }}
           onClick={onEdit}
+          aria-label={`Edit ${account.name}`}
         >
           <Pencil className="h-3 w-3" />
           Edit
@@ -482,7 +414,7 @@ export function ReconcilePage() {
 
       {/* Modals */}
       {editAccount && (
-        <EditBalanceModal
+        <EditBankAccountModal
           account={editAccount}
           onClose={() => setEditAccount(null)}
         />
