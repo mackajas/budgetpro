@@ -69,8 +69,9 @@ const EDITABLE_KINDS: TransactionKind[] = [
 // ── Paycheque read-only view ──────────────────────────────────────────────────
 
 function PaychequeView({
-  tx, envelopes, onClose,
-}: { tx: Transaction; envelopes: Envelope[]; onClose: () => void }) {
+  tx, envelopes, onClose, onDelete, deleting,
+}: { tx: Transaction; envelopes: Envelope[]; onClose: () => void; onDelete: () => void; deleting: boolean }) {
+  const [confirming, setConfirming] = useState(false)
   const splits = tx.splits ?? {}
 
   return (
@@ -115,7 +116,28 @@ function PaychequeView({
           </div>
         )}
       </div>
-      <div className="flex justify-end">
+
+      {confirming && (
+        <div className="mb-4 rounded-lg p-3 text-sm"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+          <p className="mb-3">Delete this paycheque? This cannot be undone.</p>
+          <div className="flex gap-2">
+            <button className="btn-danger text-xs px-3 py-1.5" onClick={onDelete} disabled={deleting}>
+              Yes, delete
+            </button>
+            <button className="btn-ghost text-xs px-3 py-1.5" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <button className="flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70"
+          style={{ color: 'var(--text-subtle)' }}
+          onClick={() => setConfirming(true)}>
+          <Trash2 className="h-3.5 w-3.5" /> Delete
+        </button>
         <button className="btn-primary" onClick={onClose}>Close</button>
       </div>
     </>
@@ -323,7 +345,7 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
         </div>
 
         {isPaycheque ? (
-          <PaychequeView tx={tx} envelopes={envelopes} onClose={onClose} />
+          <PaychequeView tx={tx} envelopes={envelopes} onClose={onClose} onDelete={handleDelete} deleting={saving} />
         ) : (
           <>
             {/* Locked fields (imported) */}
