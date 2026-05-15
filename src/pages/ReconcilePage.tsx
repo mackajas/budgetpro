@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Link }                          from 'react-router-dom'
-import { Landmark, Pencil, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Landmark, Pencil, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { useBankAccountStore }   from '../stores/useBankAccountStore'
 import { useTransactionStore }   from '../stores/useTransactionStore'
 import { useEnvelopeStore }      from '../stores/useEnvelopeStore'
@@ -118,8 +118,8 @@ function ReconcileModal({
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
-  label, value, colour,
-}: { label: string; value: number; colour?: string }) {
+  label, value, colour, sublabel,
+}: { label: string; value: number; colour?: string; sublabel?: string }) {
   return (
     <div className="card flex flex-col gap-1 rounded-xl p-5">
       <p className="text-xs section-label">{label}</p>
@@ -129,6 +129,11 @@ function StatCard({
       >
         {formatCurrency(value)}
       </p>
+      {sublabel && (
+        <p className="text-xs mt-0.5" style={{ color: colour ?? 'var(--text-subtle)' }}>
+          {sublabel}
+        </p>
+      )}
     </div>
   )
 }
@@ -230,8 +235,13 @@ export function ReconcilePage() {
       .reduce((sum, e) => sum + (rawBalances[e.id] ?? 0), 0)
   }, [envelopes, rawBalances])
 
-  const gap        = bankTotal - envelopeTotal
-  const isBalanced = Math.abs(gap) < 0.005
+  const gap         = bankTotal - envelopeTotal
+  const isBalanced  = Math.abs(gap) < 0.005
+  const isSurplus   = gap >  0.005   // bank holds more than envelopes
+
+  const gapLabel    = isBalanced  ? 'Balanced'      : isSurplus  ? 'Surplus'       : 'Shortfall'
+  const gapColour   = isBalanced  ? 'var(--success)' : isSurplus  ? '#D97706'       : 'var(--danger)'
+  const gapSublabel = !isBalanced ? (isSurplus       ? 'more in bank than envelopes' : 'less in bank than envelopes') : undefined
 
   // ── Reconcile handler ──────────────────────────────────────────────────────
   async function handleReconcile(notes: string) {
@@ -299,9 +309,10 @@ export function ReconcilePage() {
             <StatCard label="Bank total"     value={bankTotal} />
             <StatCard label="Envelope total" value={envelopeTotal} />
             <StatCard
-              label="Gap"
-              value={gap}
-              colour={isBalanced ? 'var(--success)' : 'var(--danger)'}
+              label={gapLabel}
+              value={Math.abs(gap)}
+              colour={gapColour}
+              sublabel={gapSublabel}
             />
           </div>
 
@@ -318,6 +329,19 @@ export function ReconcilePage() {
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               Your bank accounts and envelopes are balanced.
             </div>
+          ) : isSurplus ? (
+            <div
+              className="mb-5 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium"
+              style={{
+                background:  'color-mix(in srgb, #D97706 8%, transparent)',
+                borderColor: '#D97706',
+                color:       '#D97706',
+              }}
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              Your bank accounts hold {formatCurrency(gap)} more than your envelopes — you may
+              have unrecorded income or deposits.
+            </div>
           ) : (
             <div
               className="mb-5 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium"
@@ -327,9 +351,9 @@ export function ReconcilePage() {
                 color:       'var(--danger)',
               }}
             >
-              <Landmark className="h-4 w-4 shrink-0" />
-              Gap of {formatCurrency(Math.abs(gap))} — check for missing transactions or
-              unrecorded account activity.
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              Your bank accounts hold {formatCurrency(Math.abs(gap))} less than your envelopes —
+              you may have unrecorded expenses.
             </div>
           )}
 
