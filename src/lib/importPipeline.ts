@@ -203,9 +203,11 @@ export async function runImportPipeline(params: {
     })
 
     // ── Detect duplicate ─────────────────────────────────────────────────
+    // Both 'hard' (exact match) and 'soft' (same date+amount+12-char prefix)
+    // are treated as duplicates and skipped. The three-field criteria is
+    // specific enough to confidently suppress both variants.
     const dupResult   = detectDuplicate({ date, amount, description }, existing)
-    const isDuplicate = dupResult === 'hard'
-    const isSoftDup   = dupResult === 'soft'
+    const isDuplicate = dupResult === 'hard' || dupResult === 'soft'
 
     // ── Build classification ─────────────────────────────────────────────
     let kind:            TransactionKind   = amount >= 0 ? 'cash-income' : 'expense'
@@ -214,12 +216,6 @@ export async function runImportPipeline(params: {
     let how_categorised: HowCategorised | null = null
     let review                             = false
     let notes:           string | null     = null
-
-    // Soft duplicates are imported but immediately sent to review
-    if (isSoftDup) {
-      review = true
-      notes  = 'Possible duplicate — check and delete if not needed'
-    }
 
     if (paychequeResult.matched) {
       // Paycheque: run two-pass split
