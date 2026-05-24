@@ -240,15 +240,14 @@ export function ImportModal({ onClose }: Props) {
 
         // Re-check duplicates with the fetched existing rows
         const { detectDuplicate: checkDup } = await import('../lib/csv/duplicate')
-        const SOFT_NOTE = 'Possible duplicate — check and delete if not needed'
         const updatedRows = result.rows.map(r => {
           if (r.validationError || !r.date) return r
           const dupResult = checkDup(
             { date: r.date, amount: r.amount, description: r.description },
             (existing ?? []) as Parameters<typeof checkDup>[1],
           )
-          if (dupResult === 'hard') return { ...r, isDuplicate: true }
-          if (dupResult === 'soft') return { ...r, isDuplicate: false, review: true, notes: SOFT_NOTE }
+          // Both hard and soft duplicates are skipped
+          if (dupResult === 'hard' || dupResult === 'soft') return { ...r, isDuplicate: true }
           return r
         })
 
