@@ -240,15 +240,16 @@ export function ImportModal({ onClose }: Props) {
 
         // Re-check duplicates with the fetched existing rows
         const { detectDuplicate: checkDup } = await import('../lib/csv/duplicate')
+        const SOFT_NOTE = 'Possible duplicate — check and delete if not needed'
         const updatedRows = result.rows.map(r => {
           if (r.validationError || !r.date) return r
-          return {
-            ...r,
-            isDuplicate: checkDup(
-              { date: r.date, amount: r.amount, description: r.description },
-              (existing ?? []) as Parameters<typeof checkDup>[1],
-            ),
-          }
+          const dupResult = checkDup(
+            { date: r.date, amount: r.amount, description: r.description },
+            (existing ?? []) as Parameters<typeof checkDup>[1],
+          )
+          if (dupResult === 'hard') return { ...r, isDuplicate: true }
+          if (dupResult === 'soft') return { ...r, isDuplicate: false, review: true, notes: SOFT_NOTE }
+          return r
         })
 
         result.rows    = updatedRows
@@ -304,7 +305,7 @@ export function ImportModal({ onClose }: Props) {
       splits:          r.splits,
       how_categorised: r.how_categorised,
       review:          r.review,
-      notes:           null,
+      notes:           r.notes,
       import_batch_id: batchId,
       bank_account_id: accountId,
       deleted:         false,

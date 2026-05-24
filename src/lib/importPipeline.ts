@@ -41,6 +41,7 @@ export interface ProcessedRow {
   splits:          Record<string, number> | null
   how_categorised: HowCategorised | null
   review:          boolean
+  notes:           string | null   // set for soft duplicates; user-editable after import
 
   // Source account (set by ImportModal before insert)
   bank_account_id:  string | null
@@ -170,7 +171,7 @@ export async function runImportPipeline(params: {
       rows.push({
         date: '', amount: 0, description: '',
         kind: 'expense', envelope_id: null, splits: null,
-        how_categorised: null, review: false,
+        how_categorised: null, review: false, notes: null,
         bank_account_id: null,
         isDuplicate: false, importAnyway: false,
         validationError: `Parse error: ${e instanceof Error ? e.message : String(e)}`,
@@ -184,7 +185,7 @@ export async function runImportPipeline(params: {
       rows.push({
         date: normalised.date, amount: normalised.amount, description: normalised.description,
         kind: 'expense', envelope_id: null, splits: null,
-        how_categorised: null, review: false,
+        how_categorised: null, review: false, notes: null,
         bank_account_id: null,
         isDuplicate: false, importAnyway: false,
         validationError: validation.error,
@@ -202,7 +203,9 @@ export async function runImportPipeline(params: {
     })
 
     // ── Detect duplicate ─────────────────────────────────────────────────
-    const isDuplicate = detectDuplicate({ date, amount, description }, existing)
+    const dupResult   = detectDuplicate({ date, amount, description }, existing)
+    const isDuplicate = dupResult === 'hard'
+    const isSoftDup   = dupResult === 'soft'
 
     // ── Build classification ─────────────────────────────────────────────
     let kind:            TransactionKind   = amount >= 0 ? 'cash-income' : 'expense'
@@ -210,6 +213,13 @@ export async function runImportPipeline(params: {
     let splits:          Record<string, number> | null = null
     let how_categorised: HowCategorised | null = null
     let review                             = false
+    let notes:           string | null     = null
+
+    // Soft duplicates are imported but immediately sent to review
+    if (isSoftDup) {
+      review = true
+      notes  = 'Possible duplicate — check and delete if not needed'
+    }
 
     if (paychequeResult.matched) {
       // Paycheque: run two-pass split
@@ -259,7 +269,7 @@ export async function runImportPipeline(params: {
 
     rows.push({
       date, amount, description,
-      kind, envelope_id, splits, how_categorised, review,
+      kind, envelope_id, splits, how_categorised, review, notes,
       bank_account_id: null,
       isDuplicate, importAnyway: false,
       validationError: null,

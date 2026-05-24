@@ -1,14 +1,21 @@
 /**
  * detectDuplicate()
  *
- * Returns true if an existing transaction in the store matches the candidate
- * row on all three fields: date + amount + description (case-insensitive).
+ * Returns a two-tier result for the candidate row against existing transactions:
+ *
+ *   'hard'  — Exact match on date + amount + normalised description.
+ *             Auto-skip during import; no user action needed.
+ *
+ *   'soft'  — Same date + same amount, and descriptions share a common prefix
+ *             of ≥ PREFIX_LEN normalised characters. Typical of pending-vs-settled
+ *             variants (e.g. "TRYBOOKING*Jaguars Net ball Club" vs
+ *             "TRYBOOKING*Jaguars Net SOUTH YARRA AUS"). Imported but flagged for
+ *             user review with a note.
+ *
+ *   false   — No match. Import normally.
  *
  * This is the duplicate detection strategy per BRD §4.5.2:
  * "Duplicate detection prevents importing transactions already in the database"
- *
- * The match is intentionally strict (all three fields) to avoid false positives
- * for recurring transactions at the same amount (e.g. monthly rent).
  *
  * Description normalisation: trailing Australian state/territory or country codes
  * (e.g. " VIC", " AUS") are stripped before comparing. Coles CC exports pending
@@ -22,21 +29,48 @@ import type { ImportRow } from './validate'
 /** Matches a trailing Australian state, territory, or country code. */
 const TRAILING_GEO = /\s+(VIC|NSW|QLD|SA|WA|TAS|ACT|NT|AUS)$/i
 
+/**
+ * Minimum shared prefix length (in normalised characters) required to flag a
+ * soft duplicate. 12 chars is enough to identify the same merchant while
+ * avoiding false positives on short generic prefixes.
+ */
+export const PREFIX_LEN = 12
+
 function normaliseDesc(desc: string): string {
   return desc.toLowerCase().trim().replace(TRAILING_GEO, '')
 }
 
+export type DuplicateResult = 'hard' | 'soft' | false
+
 export function detectDuplicate(
   candidate: ImportRow,
   existing: Transaction[],
-): boolean {
-  const candDesc = normaliseDesc(candidate.description)
+): DuplicateResult {
+  const candDesc   = normaliseDesc(candidate.description)
+  const candPrefix = candDesc.substring(0, PREFIX_LEN)
 
-  return existing.some(tx => {
-    if (tx.deleted) return false
-    if (tx.date !== candidate.date) return false
-    if (Number(tx.amount) !== candidate.amount) return false
-    if (normaliseDesc(tx.description) !== candDesc) return false
-    return true
-  })
+  let softMatch = false
+
+  for (const tx of existing) {
+    if (tx.deleted) continue
+    if (tx.date    !== candidate.date)          continue
+    if (Number(tx.amount) !== candidate.amount) continue
+
+    const txDesc = normaliseDesc(tx.description)
+
+    // Tier 1 — hard duplicate: exact normalised description
+    if (txDesc === candDesc) return 'hard'
+
+    // Tier 2 — soft duplicate: shared prefix of ≥ PREFIX_LEN chars
+    if (
+      candDesc.length   >= PREFIX_LEN &&
+      txDesc.length     >= PREFIX_LEN &&
+      txDesc.substring(0, PREFIX_LEN) === candPrefix
+    ) {
+      softMatch = true
+      // Keep scanning — a later entry might be a hard match
+    }
+  }
+
+  return softMatch ? 'soft' : false
 }
