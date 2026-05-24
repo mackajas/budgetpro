@@ -144,13 +144,13 @@ describe('detectDuplicate', () => {
     },
   ]
 
-  it('T12a — returns true when date + amount + description all match', () => {
+  it('T12a — returns "hard" when date + amount + description all match', () => {
     expect(
       detectDuplicate(
         { date: '2024-03-15', amount: -89.50, description: 'WOOLWORTHS 1234 SYDNEY' },
         existing,
       ),
-    ).toBe(true)
+    ).toBe('hard')
   })
 
   it('T12b — returns false when description differs', () => {
@@ -180,16 +180,16 @@ describe('detectDuplicate', () => {
     ).toBe(false)
   })
 
-  it('T12e — match is case-insensitive on description', () => {
+  it('T12e — hard match is case-insensitive on description', () => {
     expect(
       detectDuplicate(
         { date: '2024-03-15', amount: -89.50, description: 'woolworths 1234 sydney' },
         existing,
       ),
-    ).toBe(true)
+    ).toBe('hard')
   })
 
-  it('T12f — matches when existing has trailing state code the candidate lacks (pending→settled)', () => {
+  it('T12f — hard match when existing has trailing state code the candidate lacks (pending→settled)', () => {
     // Simulates: existing = settled export ("WOOLWORTHS 1234 SYDNEY VIC"),
     // candidate = pending export ("WOOLWORTHS 1234 SYDNEY") — same real transaction
     const withSuffix: Transaction[] = [{
@@ -201,10 +201,10 @@ describe('detectDuplicate', () => {
         { date: '2024-03-15', amount: -89.50, description: 'WOOLWORTHS 1234 SYDNEY' },
         withSuffix,
       ),
-    ).toBe(true)
+    ).toBe('hard')
   })
 
-  it('T12g — matches when candidate has trailing country code the existing lacks (settled→pending)', () => {
+  it('T12g — hard match when candidate has trailing country code the existing lacks (settled→pending)', () => {
     // Simulates: existing = pending export ("WOOLWORTHS 1234 SYDNEY"),
     // candidate = settled export ("WOOLWORTHS 1234 SYDNEY AUS") — same real transaction
     expect(
@@ -212,7 +212,50 @@ describe('detectDuplicate', () => {
         { date: '2024-03-15', amount: -89.50, description: 'WOOLWORTHS 1234 SYDNEY AUS' },
         existing,
       ),
-    ).toBe(true)
+    ).toBe('hard')
+  })
+
+  it('T12h — returns "soft" when same date + amount and descriptions share ≥ 12-char prefix', () => {
+    // Simulates: pending = "TRYBOOKING*Jaguars Net ball Club",
+    // settled = "TRYBOOKING*Jaguars Net SOUTH YARRA AUS" — same merchant, different suffix
+    const withPending: Transaction[] = [{
+      ...existing[0],
+      description: 'TRYBOOKING*Jaguars Net ball Club',
+    }]
+    expect(
+      detectDuplicate(
+        { date: '2024-03-15', amount: -89.50, description: 'TRYBOOKING*Jaguars Net SOUTH YARRA AUS' },
+        withPending,
+      ),
+    ).toBe('soft')
+  })
+
+  it('T12i — returns false when same date + amount but prefix < 12 chars', () => {
+    // Descriptions that are too short / diverge before 12 chars should NOT soft-match
+    const withShort: Transaction[] = [{
+      ...existing[0],
+      description: 'PAY 123',   // only 7 chars before diverging
+    }]
+    expect(
+      detectDuplicate(
+        { date: '2024-03-15', amount: -89.50, description: 'PAY 456' },
+        withShort,
+      ),
+    ).toBe(false)
+  })
+
+  it('T12j — hard match takes priority over soft match', () => {
+    // If the existing array contains both a hard and a soft match, returns 'hard'
+    const mixed: Transaction[] = [
+      { ...existing[0], description: 'TRYBOOKING*Jaguars Net ball Club' },   // soft
+      { ...existing[0], description: 'WOOLWORTHS 1234 SYDNEY' },              // hard
+    ]
+    expect(
+      detectDuplicate(
+        { date: '2024-03-15', amount: -89.50, description: 'WOOLWORTHS 1234 SYDNEY' },
+        mixed,
+      ),
+    ).toBe('hard')
   })
 })
 
