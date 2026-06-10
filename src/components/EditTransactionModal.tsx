@@ -340,7 +340,15 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
     tx.kind === 'cash-income-split' ||
     (tx.kind !== 'move-money' && tx.splits && Object.keys(tx.splits).length > 0),
   )
-  const [splits,      setSplits]      = useState<Record<string, number> | null>(tx.splits)
+  const [splits,      setSplits]      = useState<Record<string, number> | null>(() => {
+    if (!tx.splits) return null
+    if (tx.kind === 'expense') {
+      return Object.fromEntries(
+        Object.entries(tx.splits).map(([k, v]) => [k, Math.abs(v as number)])
+      )
+    }
+    return tx.splits
+  })
   const [saving,      setSaving]      = useState(false)
   const [confirming,  setConfirming]  = useState(false)
 
@@ -366,7 +374,9 @@ export function EditTransactionModal({ transaction: tx, onClose }: Props) {
       if (!isPaycheque && !isOpeningBal) {
         patch.kind       = kind
         if (splitMode && splits && Object.keys(splits).length >= 2) {
-          patch.splits        = splits
+          patch.splits        = kind === 'expense'
+            ? Object.fromEntries(Object.entries(splits).map(([k, v]) => [k, -Math.abs(v)]))
+            : splits
           patch.envelope_id   = null
           patch.how_categorised = 'split'
           patch.kind          = kind === 'cash-income' ? 'cash-income-split' : kind
