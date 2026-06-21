@@ -222,3 +222,32 @@ create policy household_access on settings
 --   ('COLES',        '<groceries-uuid>', 'default', 100),
 --   ...
 -- See documentation for the full list.
+
+
+-- ── Expenses page ─────────────────────────────────────────────────────────────
+
+create table expense_categories (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+create table expense_items (
+  id          uuid primary key default gen_random_uuid(),
+  category_id uuid not null references expense_categories(id) on delete cascade,
+  name        text not null,
+  description text,
+  amount      numeric(12,2) not null,
+  frequency   text not null check (frequency in ('weekly','fortnightly','monthly','quarterly','annually')),
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+alter table expense_categories enable row level security;
+alter table expense_items      enable row level security;
+
+create policy household_access on expense_categories
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
+create policy household_access on expense_items
+  for all using ((auth.jwt() ->> 'app_role') = 'household');
