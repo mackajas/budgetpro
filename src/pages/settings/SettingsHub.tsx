@@ -15,6 +15,7 @@ const LINK_GROUPS = [
     pages: [
       { to: '/settings/envelopes',        label: 'Manage Envelopes', desc: 'Add, rename, and organise budget envelopes' },
       { to: '/settings/opening-balances', label: 'Opening Balances', desc: 'Set initial envelope balances' },
+      { to: '/settings/expenses',         label: 'Expenses',         desc: 'Document recurring committed expenses' },
     ],
   },
   {

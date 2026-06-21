@@ -47,14 +47,13 @@ export default function App() {
                   <Route index               element={<DashboardPage />} />
                   <Route path="transactions" element={<TransactionsPage />} />
                   <Route path="reconcile"    element={<ReconcilePage />} />
-                  <Route path="expenses"     element={<ExpensesPage />} />
-
                   {/* Settings */}
                   <Route path="settings"                      element={<SettingsHub />} />
                   <Route path="settings/envelopes"            element={<EnvelopesPage />} />
                   <Route path="settings/paycheque"            element={<PaychequePage />} />
                   <Route path="settings/allocations"          element={<AllocationsPage />} />
                   <Route path="settings/opening-balances"     element={<OpeningBalancesPage />} />
+                  <Route path="settings/expenses"             element={<ExpensesPage />} />
                   <Route path="settings/ignored"              element={<IgnoredPage />} />
                   <Route path="settings/bank-accounts"        element={<BankAccountsPage />} />
                   <Route path="settings/appearance"           element={<AppearancePage />} />

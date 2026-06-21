@@ -1,15 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, ArrowLeftRight, RefreshCcw, Settings, LogOut, Loader2, Receipt
+  LayoutDashboard, ArrowLeftRight, RefreshCcw, Settings, LogOut, Loader2
 } from 'lucide-react'
 import { useAuthStore } from '../stores/useAuthStore'
 
 const NAV = [
-  { to: '/',            label: 'Dashboard',    Icon: LayoutDashboard },
+  { to: '/',             label: 'Dashboard',    Icon: LayoutDashboard },
   { to: '/transactions', label: 'Transactions', Icon: ArrowLeftRight  },
-  { to: '/reconcile',   label: 'Reconcile',    Icon: RefreshCcw       },
-  { to: '/expenses',    label: 'Expenses',     Icon: Receipt          },
-  { to: '/settings',    label: 'Settings',     Icon: Settings         },
+  { to: '/reconcile',    label: 'Reconcile',    Icon: RefreshCcw      },
+  { to: '/settings',     label: 'Settings',     Icon: Settings        },
 ]
 
 interface Props {
