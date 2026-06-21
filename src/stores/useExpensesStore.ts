@@ -18,7 +18,11 @@ interface ExpensesActions {
   addItem:          (categoryId: string, data: {
     name: string; description: string | null; amount: number; frequency: ExpenseFrequency
   }) => Promise<void>
+  updateCategory:   (id: string, name: string) => Promise<void>
   removeItem:       (id: string) => Promise<void>
+  updateItem:       (id: string, patch: {
+    name: string; description: string | null; amount: number; frequency: ExpenseFrequency
+  }) => Promise<void>
   moveItem:         (id: string, newCategoryId: string) => Promise<void>
 }
 
@@ -122,6 +126,17 @@ export const useExpensesStore = create<ExpensesState & ExpensesActions>((set, ge
     await get().fetch()
   },
 
+  updateCategory: async (id: string, name: string) => {
+    const { error } = await supabase
+      .from('expense_categories')
+      .update({ name })
+      .eq('id', id)
+    if (error) throw error
+    set(s => ({
+      categories: s.categories.map(c => c.id === id ? { ...c, name } : c),
+    }))
+  },
+
   removeItem: async (id: string) => {
     const { error } = await supabase
       .from('expense_items')
@@ -129,6 +144,17 @@ export const useExpensesStore = create<ExpensesState & ExpensesActions>((set, ge
       .eq('id', id)
     if (error) throw error
     set(s => ({ items: s.items.filter(i => i.id !== id) }))
+  },
+
+  updateItem: async (id: string, patch) => {
+    const { error } = await supabase
+      .from('expense_items')
+      .update(patch)
+      .eq('id', id)
+    if (error) throw error
+    set(s => ({
+      items: s.items.map(i => i.id === id ? { ...i, ...patch } : i),
+    }))
   },
 
   moveItem: async (id: string, newCategoryId: string) => {

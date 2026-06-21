@@ -93,12 +93,159 @@ function MoveItemModal({
   )
 }
 
+// ── Edit Envelope Modal ───────────────────────────────────────────────────────
+
+function EditEnvelopeModal({
+  category,
+  onSave,
+  onClose,
+}: {
+  category: ExpenseCategory
+  onSave:   (name: string) => Promise<void>
+  onClose:  () => void
+}) {
+  const [name,   setName]   = useState(category.name)
+  const [saving, setSaving] = useState(false)
+  const ref = useRef<HTMLInputElement>(null)
+  useEffect(() => { ref.current?.focus(); ref.current?.select() }, [])
+
+  async function handleSave() {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setSaving(true)
+    try { await onSave(trimmed); onClose() } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--text)' }}>Edit envelope</h2>
+        <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Envelope name</label>
+        <input
+          ref={ref}
+          className="input text-sm w-full mb-5"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onClose() }}
+        />
+        <div className="flex justify-end gap-2">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button
+            className="btn-primary"
+            disabled={!name.trim() || saving}
+            onClick={handleSave}
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Edit Item Modal ───────────────────────────────────────────────────────────
+
+function EditItemModal({
+  item,
+  onSave,
+  onClose,
+}: {
+  item:    ExpenseItem
+  onSave:  (patch: { name: string; description: string | null; amount: number; frequency: ExpenseFrequency }) => Promise<void>
+  onClose: () => void
+}) {
+  const [name,      setName]      = useState(item.name)
+  const [desc,      setDesc]      = useState(item.description ?? '')
+  const [amount,    setAmount]    = useState(String(item.amount))
+  const [frequency, setFrequency] = useState<ExpenseFrequency>(item.frequency)
+  const [saving,    setSaving]    = useState(false)
+  const ref = useRef<HTMLInputElement>(null)
+  useEffect(() => { ref.current?.focus(); ref.current?.select() }, [])
+
+  async function handleSave() {
+    const parsed = parseFloat(amount)
+    if (!name.trim() || isNaN(parsed) || parsed <= 0) return
+    setSaving(true)
+    try {
+      await onSave({ name: name.trim(), description: desc.trim() || null, amount: parsed, frequency })
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--text)' }}>Edit item</h2>
+
+        <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Item name</label>
+        <input
+          ref={ref}
+          className="input text-sm w-full mb-3"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === 'Escape' && onClose()}
+        />
+
+        <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Description (optional)</label>
+        <input
+          className="input text-sm w-full mb-3"
+          value={desc}
+          onChange={e => setDesc(e.target.value)}
+          onKeyDown={e => e.key === 'Escape' && onClose()}
+        />
+
+        <div className="flex gap-3 mb-5">
+          <div className="flex-1">
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Amount</label>
+            <input
+              className="input text-sm w-full text-right"
+              type="number"
+              min="0"
+              step="0.01"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              onKeyDown={e => e.key === 'Escape' && onClose()}
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Frequency</label>
+            <select
+              className="select text-sm w-full"
+              value={frequency}
+              onChange={e => setFrequency(e.target.value as ExpenseFrequency)}
+            >
+              {(Object.keys(FREQ_LABELS) as ExpenseFrequency[]).map(f => (
+                <option key={f} value={f}>{FREQ_LABELS[f]}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button
+            className="btn-primary"
+            disabled={!name.trim() || !amount || saving}
+            onClick={handleSave}
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Row menu (⋮) ──────────────────────────────────────────────────────────────
 
 function RowMenu({
+  onEdit,
   onMove,
   onRemove,
 }: {
+  onEdit:   () => void
   onMove:   () => void
   onRemove: () => void
 }) {
@@ -145,6 +292,15 @@ function RowMenu({
             style={{ color: 'var(--text)', background: 'none', border: 'none', cursor: 'pointer' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            onClick={() => { setOpen(false); onEdit() }}
+          >
+            Edit
+          </button>
+          <button
+            className="w-full text-left px-3 py-2 text-sm flex items-center gap-2"
+            style={{ color: 'var(--text)', background: 'none', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             onClick={() => { setOpen(false); onMove() }}
           >
             Move
@@ -170,12 +326,14 @@ function RowMenu({
 function EnvelopeMenu({
   isFirst,
   isLast,
+  onEdit,
   onMoveUp,
   onMoveDown,
   onRemove,
 }: {
   isFirst:    boolean
   isLast:     boolean
+  onEdit:     () => void
   onMoveUp:   () => void
   onMoveDown: () => void
   onRemove:   () => void
@@ -218,6 +376,16 @@ function EnvelopeMenu({
             padding:    '4px 0',
           }}
         >
+          <button
+            className="w-full text-left px-3 py-2 text-sm flex items-center gap-2"
+            style={{ color: 'var(--text)', background: 'none', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            onClick={() => { setOpen(false); onEdit() }}
+          >
+            Edit
+          </button>
+          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
           <button
             disabled={isFirst}
             className="w-full text-left px-3 py-2 text-sm flex items-center gap-2"
@@ -365,23 +533,27 @@ function EnvelopeCard({
   items,
   isFirst,
   isLast,
+  onEdit,
   onMoveUp,
   onMoveDown,
   onRemove,
   onAddItem,
   onRemoveItem,
   onMoveItem,
+  onEditItem,
 }: {
   category:    ExpenseCategory
   items:       ExpenseItem[]
   isFirst:     boolean
   isLast:      boolean
+  onEdit:       () => void
   onMoveUp:    () => void
   onMoveDown:  () => void
   onRemove:    () => void
   onAddItem:   (data: { name: string; description: string | null; amount: number; frequency: ExpenseFrequency }) => Promise<void>
   onRemoveItem: (id: string) => void
   onMoveItem:   (item: ExpenseItem) => void
+  onEditItem:   (item: ExpenseItem) => void
 }) {
   const [addingItem,    setAddingItem]    = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -401,6 +573,7 @@ function EnvelopeCard({
         <EnvelopeMenu
           isFirst={isFirst}
           isLast={isLast}
+          onEdit={onEdit}
           onMoveUp={onMoveUp}
           onMoveDown={onMoveDown}
           onRemove={() => setConfirmRemove(true)}
@@ -434,6 +607,7 @@ function EnvelopeCard({
               </td>
               <td className="px-4 py-2.5 text-right">
                 <RowMenu
+                  onEdit={() => onEditItem(item)}
                   onMove={() => onMoveItem(item)}
                   onRemove={() => onRemoveItem(item.id)}
                 />
@@ -565,14 +739,16 @@ function AddEnvelopeForm({
 
 export function ExpensesPage() {
   const { categories, items, isLoading, fetch,
-    addCategory, removeCategory, moveCategoryUp, moveCategoryDown,
-    addItem, removeItem, moveItem,
+    addCategory, updateCategory, removeCategory, moveCategoryUp, moveCategoryDown,
+    addItem, updateItem, removeItem, moveItem,
   } = useExpensesStore()
   const { toast }    = useToast()
   const { withSave } = useSave()
 
-  const [addingEnvelope, setAddingEnvelope] = useState(false)
-  const [movingItem,     setMovingItem]     = useState<ExpenseItem | null>(null)
+  const [addingEnvelope,   setAddingEnvelope]   = useState(false)
+  const [movingItem,       setMovingItem]        = useState<ExpenseItem | null>(null)
+  const [editingCategory,  setEditingCategory]   = useState<ExpenseCategory | null>(null)
+  const [editingItem,      setEditingItem]       = useState<ExpenseItem | null>(null)
 
   useEffect(() => { fetch() }, [fetch])
 
@@ -631,6 +807,24 @@ export function ExpensesPage() {
     })
   }
 
+  async function handleUpdateCategory(name: string) {
+    if (!editingCategory) return
+    await withSave(async () => {
+      try { await updateCategory(editingCategory.id, name) }
+      catch { toast('Failed to update envelope', 'error') }
+    })
+  }
+
+  async function handleUpdateItem(
+    patch: { name: string; description: string | null; amount: number; frequency: ExpenseFrequency },
+  ) {
+    if (!editingItem) return
+    await withSave(async () => {
+      try { await updateItem(editingItem.id, patch) }
+      catch { toast('Failed to update item', 'error') }
+    })
+  }
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -678,12 +872,14 @@ export function ExpensesPage() {
           items={items.filter(i => i.category_id === cat.id).sort((a, b) => a.sort_order - b.sort_order)}
           isFirst={idx === 0}
           isLast={idx === sorted.length - 1}
+          onEdit={() => setEditingCategory(cat)}
           onMoveUp={() => handleMoveUp(cat.id)}
           onMoveDown={() => handleMoveDown(cat.id)}
           onRemove={() => handleRemoveCategory(cat.id)}
           onAddItem={data => handleAddItem(cat.id, data)}
           onRemoveItem={handleRemoveItem}
           onMoveItem={setMovingItem}
+          onEditItem={setEditingItem}
         />
       ))}
 
@@ -693,6 +889,22 @@ export function ExpensesPage() {
           categories={categories}
           onMove={handleMoveItem}
           onClose={() => setMovingItem(null)}
+        />
+      )}
+
+      {editingCategory && (
+        <EditEnvelopeModal
+          category={editingCategory}
+          onSave={handleUpdateCategory}
+          onClose={() => setEditingCategory(null)}
+        />
+      )}
+
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          onSave={handleUpdateItem}
+          onClose={() => setEditingItem(null)}
         />
       )}
     </div>
