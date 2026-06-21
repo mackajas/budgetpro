@@ -9,6 +9,7 @@ import { LoginPage }           from './pages/LoginPage'
 import { DashboardPage }       from './pages/DashboardPage'
 import { TransactionsPage }    from './pages/TransactionsPage'
 import { ReconcilePage }       from './pages/ReconcilePage'
+import { ExpensesPage }        from './pages/ExpensesPage'
 import { SettingsHub }         from './pages/settings/SettingsHub'
 import { EnvelopesPage }       from './pages/settings/EnvelopesPage'
 import { PaychequePage }       from './pages/settings/PaychequePage'
@@ -46,6 +47,7 @@ export default function App() {
                   <Route index               element={<DashboardPage />} />
                   <Route path="transactions" element={<TransactionsPage />} />
                   <Route path="reconcile"    element={<ReconcilePage />} />
+                  <Route path="expenses"     element={<ExpensesPage />} />
 
                   {/* Settings */}
                   <Route path="settings"                      element={<SettingsHub />} />

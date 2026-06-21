@@ -123,4 +123,30 @@ export const handlers = [
   http.get(`${SUPABASE_URL}/rest/v1/reconciliation_records`, () =>
     HttpResponse.json([]),
   ),
+
+  // Expenses — categories and items (read + write)
+  http.get(`${SUPABASE_URL}/rest/v1/expense_categories`, () =>
+    HttpResponse.json([]),
+  ),
+  http.post(`${SUPABASE_URL}/rest/v1/expense_categories`, () =>
+    HttpResponse.json(null, { status: 201 }),
+  ),
+  http.patch(`${SUPABASE_URL}/rest/v1/expense_categories`, () =>
+    HttpResponse.json(null),
+  ),
+  http.delete(`${SUPABASE_URL}/rest/v1/expense_categories`, () =>
+    HttpResponse.json(null),
+  ),
+  http.get(`${SUPABASE_URL}/rest/v1/expense_items`, () =>
+    HttpResponse.json([]),
+  ),
+  http.post(`${SUPABASE_URL}/rest/v1/expense_items`, () =>
+    HttpResponse.json(null, { status: 201 }),
+  ),
+  http.patch(`${SUPABASE_URL}/rest/v1/expense_items`, () =>
+    HttpResponse.json(null),
+  ),
+  http.delete(`${SUPABASE_URL}/rest/v1/expense_items`, () =>
+    HttpResponse.json(null),
+  ),
 ]

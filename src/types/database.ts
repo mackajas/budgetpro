@@ -83,6 +83,26 @@ export interface ReconciliationRecord {
   created_at:       string
 }
 
+export type ExpenseFrequency = 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'annually'
+
+export interface ExpenseCategory {
+  id:         string
+  name:       string
+  sort_order: number
+  created_at: string
+}
+
+export interface ExpenseItem {
+  id:          string
+  category_id: string
+  name:        string
+  description: string | null
+  amount:      number
+  frequency:   ExpenseFrequency
+  sort_order:  number
+  created_at:  string
+}
+
 export interface Settings {
   id:                       1
   password_hash:            string | null
