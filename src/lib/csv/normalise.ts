@@ -11,10 +11,13 @@
  *   debit-credit — credit is positive, debit is negative; one will be blank per row
  *
  * Date formats supported:
- *   DD/MM/YYYY  (most banks)
- *   DD/MM/YY    (some older exports)
- *   DD-Mon-YYYY (NAB — e.g. "01-Jan-2024")
- *   YYYY-MM-DD  (ISO — pass-through)
+ *   DD/MM/YYYY      (most banks)
+ *   DD/MM/YY        (some older exports)
+ *   DD-Mon-YYYY     (NAB — e.g. "01-Jan-2024")
+ *   DD-Mon-YY       (Coles CC hyphen — e.g. "2-May-26")
+ *   DD Mon YYYY     (space-separated 3-letter month)
+ *   DD FullMonth YY (Coles CC actual export — e.g. "06 July 26")
+ *   YYYY-MM-DD      (ISO — pass-through)
  */
 
 import type { BankFormat } from './formats'
@@ -56,12 +59,13 @@ export function parseDate(raw: string): string {
     if (m) return `${year}-${m}-${d.padStart(2, '0')}`
   }
 
-  // DD Mon YYYY (e.g. "01 Jan 2024")
-  const spaceMatch = s.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/)
+  // DD Mon YYYY or DD FullMonthName YY (e.g. "06 July 26" — Coles CC actual export)
+  const spaceMatch = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})$/)
   if (spaceMatch) {
     const [, d, mon, y] = spaceMatch
-    const m = MONTHS[mon.toLowerCase()]
-    if (m) return `${y}-${m}-${d.padStart(2, '0')}`
+    const year = y.length === 2 ? `20${y}` : y
+    const m = MONTHS[mon.substring(0, 3).toLowerCase()]
+    if (m) return `${year}-${m}-${d.padStart(2, '0')}`
   }
 
   throw new Error(`Unrecognised date format: "${raw}"`)

@@ -98,8 +98,10 @@ describe('normaliseRow', () => {
     expect(parseDate('01/04/24')).toBe('2024-04-01')
     // DD-Mon-YYYY (NAB style)
     expect(parseDate('01-Apr-2024')).toBe('2024-04-01')
-    // D-Mon-YY (Coles CC style — 2-digit year)
+    // D-Mon-YY (Coles CC hyphen style — 2-digit year)
     expect(parseDate('2-May-26')).toBe('2026-05-02')
+    // DD FullMonthName YY (Coles CC actual export — spaces, full name, 2-digit year)
+    expect(parseDate('06 July 26')).toBe('2026-07-06')
     // Already ISO
     expect(parseDate('2024-04-01')).toBe('2024-04-01')
   })
@@ -120,6 +122,24 @@ describe('normaliseRow', () => {
     expect(result.date).toBe('2026-05-02')
     expect(result.amount).toBe(-3.89)
     expect(result.description).toBe('COLES 7612 DEER PARK VIC')
+  })
+
+  it('T11c — normalises a Coles CC row with space+full-name date (actual export format)', () => {
+    const row = {
+      Date: '06 July 26',
+      Amount: '-8.05',
+      'Account Number': 'Card ending 2531',
+      '': '',
+      'Transaction Type': 'MISCELLANEOUS DEBIT',
+      'Transaction Details': 'COLES 0558 CAIRNLEA',
+      Category: 'Groceries',
+      'Merchant Name': 'Coles (Cairnlea)',
+      'Processed On': '',
+    }
+    const result = normaliseRow(row, 'coles-cc')
+    expect(result.date).toBe('2026-07-06')
+    expect(result.amount).toBe(-8.05)
+    expect(result.description).toBe('COLES 0558 CAIRNLEA')
   })
 })
 
